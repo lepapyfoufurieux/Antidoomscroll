@@ -74,7 +74,7 @@ import kotlinx.coroutines.withContext
 /** Bleu = normal, magenta = alerte (limite proche, focus), jaune = repères et réussites. */
 object Neon {
     val Cyan = Color(0xFF3BD1FF) // bleu électrique, entre le cyan et le bleu
-    val Title = Color(0xFF9AE7FF) // titres : le même bleu, plus clair
+    val Title = Color(0xFF00E5FF) // titres : le cyan de la maquette
     val Magenta = Color(0xFFFF2BD6)
     val Pink = Color(0xFFFF8BE8) // petit texte sur une carte magenta, plus lisible
     val Yellow = Color(0xFFFCEE0A)
@@ -185,7 +185,7 @@ fun ScreenHeader(tag: String, title: String, color: Color = Neon.Title) {
             fontWeight = FontWeight.Bold,
             letterSpacing = 1.sp,
             // Halo de la maquette (text-shadow 0 0 12px) ; au-delà, le flou est rogné en rectangle.
-            style = TextStyle(shadow = glow(if (color == Neon.Title) Neon.Cyan else color, 20f)),
+            style = TextStyle(shadow = glow(color, 20f)),
         )
     }
 }
