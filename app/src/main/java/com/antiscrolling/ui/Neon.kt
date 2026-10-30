@@ -71,7 +71,7 @@ import kotlinx.coroutines.withContext
 
 /** Bleu = normal, magenta = alerte (limite proche, focus), jaune = repères et réussites. */
 object Neon {
-    val Cyan = Color(0xFF00E5FF)
+    val Cyan = Color(0xFF5CF0FF) // un peu plus clair que le cyan pur, pour le contraste sur fond sombre
     val Magenta = Color(0xFFFF2BD6)
     val Pink = Color(0xFFFF8BE8) // petit texte sur une carte magenta, plus lisible
     val Yellow = Color(0xFFFCEE0A)
