@@ -149,7 +149,7 @@ fun StatsScreen(container: AppContainer) {
         }
 
         Column(
-            Modifier.fillMaxWidth().neonFrame(if (worse) Neon.Magenta else Neon.Cyan.copy(alpha = 0.5f), if (worse) Neon.PanelMagenta else Neon.Panel, glow = worse)
+            Modifier.fillMaxWidth().neonFrame(if (worse) Neon.Magenta else Neon.Cyan.copy(alpha = 0.85f), if (worse) Neon.PanelMagenta else Neon.Panel, glow = worse)
                 .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
@@ -182,7 +182,7 @@ fun StatsScreen(container: AppContainer) {
         }
 
         Column(
-            Modifier.fillMaxWidth().neonFrame(Neon.Cyan.copy(alpha = 0.5f)).padding(horizontal = 14.dp, vertical = 12.dp),
+            Modifier.fillMaxWidth().neonFrame(Neon.Cyan.copy(alpha = 0.85f)).padding(horizontal = 14.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Caption("Ouvertures sur 7 jours")
@@ -216,7 +216,7 @@ fun StatsScreen(container: AppContainer) {
                         },
                         color = Neon.Cyan,
                         fontSize = 13.sp,
-                        modifier = Modifier.neonFrame(Neon.Cyan.copy(alpha = 0.5f), Color.Transparent).padding(horizontal = 9.dp, vertical = 5.dp),
+                        modifier = Modifier.neonFrame(Neon.Cyan.copy(alpha = 0.85f), Color.Transparent).padding(horizontal = 9.dp, vertical = 5.dp),
                     )
                 }
             }
@@ -227,7 +227,7 @@ fun StatsScreen(container: AppContainer) {
 @Composable
 private fun Tile(title: String, value: String, detail: String, color: Color, fill: Color, glow: Boolean, modifier: Modifier) {
     Column(
-        modifier.neonFrame(if (glow) color else color.copy(alpha = 0.5f), fill, glow).padding(12.dp),
+        modifier.neonFrame(if (glow) color else color.copy(alpha = 0.85f), fill, glow).padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         Caption(title, if (color == Neon.Cyan) Neon.Muted else color.copy(alpha = 0.85f))
@@ -256,7 +256,7 @@ private fun Bars(days: List<Day>) {
                 .fillMaxWidth()
                 .height(110.dp)
                 .semantics { contentDescription = "Temps par jour : $description" }
-                .drawBehind { drawLine(Neon.Cyan.copy(alpha = 0.35f), Offset(0f, size.height), Offset(size.width, size.height), 1.dp.toPx()) },
+                .drawBehind { drawLine(Neon.Cyan.copy(alpha = 0.55f), Offset(0f, size.height), Offset(size.width, size.height), 1.dp.toPx()) },
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.Bottom,
         ) {
@@ -264,15 +264,15 @@ private fun Bars(days: List<Day>) {
                 val isToday = index == days.lastIndex
                 val color = when {
                     day.over && isToday -> Neon.Magenta
-                    day.over -> Neon.Magenta.copy(alpha = 0.6f)
+                    day.over -> Neon.Magenta.copy(alpha = 0.85f)
                     isToday -> Neon.Cyan
-                    else -> Neon.Cyan.copy(alpha = 0.35f)
+                    else -> Neon.Cyan.copy(alpha = 0.55f)
                 }
                 Box(
                     Modifier
                         .weight(1f)
                         .fillMaxHeight((day.ms.toFloat() / max).coerceAtLeast(0.02f))
-                        .then(if (isToday) Modifier.neonGlow(color, 3.dp, 0.7f, fill = color) else Modifier.background(color)),
+                        .then(if (isToday) Modifier.neonGlow(color, 3.dp, 0.95f, fill = color) else Modifier.background(color)),
                 )
             }
         }

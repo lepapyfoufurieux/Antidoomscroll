@@ -138,7 +138,7 @@ fun AppsScreen(container: AppContainer) {
             }
             Column(
                 Modifier.fillMaxWidth().neonFrame(
-                    if (checked) color.copy(alpha = 0.7f) else Neon.Off,
+                    if (checked) color.copy(alpha = 0.95f) else Neon.Off,
                     if (alert) Neon.PanelMagenta else if (checked) Neon.Panel else Color.Transparent,
                     glow = checked,
                 ),

@@ -102,7 +102,7 @@ fun RuleScreen(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Box(
-                Modifier.size(44.dp).neonFrame(Neon.Cyan.copy(alpha = 0.5f), Color.Transparent).clickable(role = Role.Button, onClick = onBack),
+                Modifier.size(44.dp).neonFrame(Neon.Cyan.copy(alpha = 0.85f), Color.Transparent).clickable(role = Role.Button, onClick = onBack),
                 contentAlignment = Alignment.Center,
             ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Retour", tint = Neon.Cyan) }
             NeonIcon(packageName, accent, 44.dp)
@@ -120,14 +120,14 @@ fun RuleScreen(
         }
 
         Tag("Blocage")
-        Column(Modifier.fillMaxWidth().neonFrame(Neon.Cyan.copy(alpha = 0.5f))) {
+        Column(Modifier.fillMaxWidth().neonFrame(Neon.Cyan.copy(alpha = 0.85f))) {
             Setting("Limite par jour", rule.dailyQuotaMin?.let { durationLabel(it) } ?: "aucune") { editing = Editing.QUOTA }
-            HorizontalDivider(color = Neon.Cyan.copy(alpha = 0.2f))
+            HorizontalDivider(color = Neon.Cyan.copy(alpha = 0.35f))
             Setting("Plages horaires", schedulesValue(rule.schedules), onClick = onSchedules)
         }
 
         Tag("À chaque ouverture")
-        Column(Modifier.fillMaxWidth().neonFrame(Neon.Cyan.copy(alpha = 0.5f)).padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(Modifier.fillMaxWidth().neonFrame(Neon.Cyan.copy(alpha = 0.85f)).padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Pause", color = Neon.Text, fontSize = 15.sp)
             ChoiceGrid(DELAY_CHOICES, rule.delaySec, DELAY_CHOICES.size, { if (it == 0) "0" else "$it s" }) { sec ->
                 update { it.copy(delaySec = sec) }
@@ -139,14 +139,14 @@ fun RuleScreen(
             ChoiceGrid(INCREMENT_CHOICES, rule.delayIncrementSec, INCREMENT_CHOICES.size, { if (it == 0) "non" else "+$it" }) { sec ->
                 update { it.copy(delayIncrementSec = sec) }
             }
-            HorizontalDivider(color = Neon.Cyan.copy(alpha = 0.2f))
+            HorizontalDivider(color = Neon.Cyan.copy(alpha = 0.35f))
             Toggle("Demander pourquoi", rule.askIntent) { on -> update { it.copy(askIntent = on) } }
             Setting("Petite tâche", taskLabel(rule.task), padded = false) { editing = Editing.TASK }
             Toggle("Choisir la durée d'accès", rule.askDuration) { on -> update { it.copy(askDuration = on) } }
         }
 
         Tag("Autres")
-        Column(Modifier.fillMaxWidth().neonFrame(Neon.Cyan.copy(alpha = 0.5f)).padding(horizontal = 14.dp, vertical = 4.dp)) {
+        Column(Modifier.fillMaxWidth().neonFrame(Neon.Cyan.copy(alpha = 0.85f)).padding(horizontal = 14.dp, vertical = 4.dp)) {
             Toggle(
                 "Masquer les notifications pendant un blocage",
                 rule.hideNotifications,
@@ -161,7 +161,7 @@ fun RuleScreen(
                     context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
                 }
             }
-            HorizontalDivider(color = Neon.Cyan.copy(alpha = 0.2f))
+            HorizontalDivider(color = Neon.Cyan.copy(alpha = 0.35f))
             Toggle("Afficher dans le widget", widgetPackage == packageName) { on ->
                 widgetPackage = if (on) packageName else null
                 container.prefs.edit().putString(TimeLeftWidget.PREF_PACKAGE, widgetPackage).apply()

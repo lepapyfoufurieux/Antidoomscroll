@@ -94,13 +94,13 @@ fun nearLimit(rule: Rule?, usedMs: Long): Boolean = rule != null && (rule.quotaS
 fun pressureColor(opensToday: Int): Color = lerp(Neon.Cyan, Neon.Magenta, (opensToday / 4f).coerceIn(0f, 1f))
 
 /** Halo d'un texte. [radius] en pixels : 32 px valent environ les 12 px CSS de la maquette. */
-fun glow(color: Color, radius: Float = 6f) = Shadow(color.copy(alpha = 0.7f), Offset.Zero, radius)
+fun glow(color: Color, radius: Float = 6f) = Shadow(color.copy(alpha = 0.9f), Offset.Zero, radius)
 
 /**
  * Halo tout autour, comme un `box-shadow: 0 0 R` CSS. L'ombre de Compose tombe vers le bas comme une élévation :
  * ici on dessine la forme avec un calque d'ombre centré, puis le contenu la recouvre.
  */
-fun Modifier.neonGlow(color: Color, radius: Dp = 4.dp, alpha: Float = 0.5f, circle: Boolean = false, fill: Color = Neon.Bg): Modifier =
+fun Modifier.neonGlow(color: Color, radius: Dp = 4.dp, alpha: Float = 0.75f, circle: Boolean = false, fill: Color = Neon.Bg): Modifier =
     drawBehind {
         val paint = Paint().asFrameworkPaint().apply {
             isAntiAlias = true
@@ -134,7 +134,7 @@ fun Modifier.neonFrame(color: Color, fill: Color = Neon.Panel, glow: Boolean = f
 fun Modifier.neonGrid(color: Color): Modifier = drawBehind {
     drawRect(Neon.Bg)
     val step = 26.dp.toPx()
-    val line = color.copy(alpha = 0.06f)
+    val line = color.copy(alpha = 0.09f)
     var x = 0f
     while (x < size.width) {
         drawLine(line, Offset(x, 0f), Offset(x, size.height))
@@ -153,7 +153,7 @@ fun Modifier.scanlines(): Modifier = drawBehind {
     val step = 4.dp.toPx()
     var y = 0f
     while (y < size.height) {
-        drawLine(Neon.Magenta.copy(alpha = 0.06f), Offset(0f, y), Offset(size.width, y))
+        drawLine(Neon.Magenta.copy(alpha = 0.09f), Offset(0f, y), Offset(size.width, y))
         y += step
     }
 }
@@ -307,7 +307,7 @@ fun UsageBar(fraction: Float, color: Color) {
             Modifier
                 .fillMaxWidth(fraction.coerceIn(0f, 1f))
                 .height(6.dp)
-                .neonGlow(color, 3.dp, 0.7f, fill = color),
+                .neonGlow(color, 3.dp, 0.95f, fill = color),
         )
     }
 }
@@ -320,7 +320,7 @@ fun NeonRing(
     size: Dp,
     dashed: Boolean = false,
     glowRadius: Dp = 5.dp,
-    glowAlpha: Float = 0.6f,
+    glowAlpha: Float = 0.85f,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
@@ -332,7 +332,7 @@ fun NeonRing(
                 val arcSize = Size(this.size.width - stroke, this.size.height - stroke)
                 val topLeft = Offset(stroke / 2, stroke / 2)
                 if (dashed) {
-                    drawArc(color.copy(alpha = 0.6f), 0f, 360f, false, topLeft, arcSize,
+                    drawArc(color.copy(alpha = 0.85f), 0f, 360f, false, topLeft, arcSize,
                         style = Stroke(2.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(14f, 10f))))
                 } else {
                     drawArc(Color.White.copy(alpha = 0.08f), 0f, 360f, false, topLeft, arcSize, style = Stroke(stroke))

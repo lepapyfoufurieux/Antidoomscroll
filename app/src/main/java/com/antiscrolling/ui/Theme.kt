@@ -29,7 +29,7 @@ private val colors = darkColorScheme(
     surfaceContainer = Neon.Panel,
     surfaceContainerHigh = Neon.Panel,
     surfaceContainerHighest = Neon.Panel,
-    outline = Neon.Cyan.copy(alpha = 0.5f),
+    outline = Neon.Cyan.copy(alpha = 0.85f),
     outlineVariant = Neon.Off,
     error = Neon.Magenta,
 )

@@ -127,7 +127,7 @@ private fun ProfileCard(
     }
     val frame = when {
         active -> Modifier.neonFrame(Neon.Magenta, Neon.PanelMagenta, glow = true)
-        custom && enabled -> Modifier.neonFrame(Neon.Cyan.copy(alpha = 0.5f))
+        custom && enabled -> Modifier.neonFrame(Neon.Cyan.copy(alpha = 0.85f))
         custom -> Modifier.neonFrame(Neon.Off, Color.Transparent, dashed = true)
         else -> Modifier.neonFrame(Neon.Off)
     }

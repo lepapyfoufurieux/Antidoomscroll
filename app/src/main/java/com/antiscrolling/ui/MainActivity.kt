@@ -117,7 +117,7 @@ private fun MainTabs(container: AppContainer) {
         bottomBar = {
             NavigationBar(
                 containerColor = Neon.Bg,
-                modifier = Modifier.drawBehind { drawLine(accent.copy(alpha = 0.4f), Offset.Zero, Offset(size.width, 0f), 1.dp.toPx()) },
+                modifier = Modifier.drawBehind { drawLine(accent.copy(alpha = 0.7f), Offset.Zero, Offset(size.width, 0f), 1.dp.toPx()) },
             ) {
                 TABS.forEachIndexed { index, (label, icon) ->
                     NavigationBarItem(

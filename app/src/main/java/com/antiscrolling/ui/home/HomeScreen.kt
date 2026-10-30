@@ -114,7 +114,7 @@ fun HomeScreen(container: AppContainer) {
         }
         item {
             Column(
-                Modifier.fillMaxWidth().neonFrame(Neon.Cyan.copy(alpha = 0.6f), glow = true).padding(16.dp),
+                Modifier.fillMaxWidth().neonFrame(Neon.Cyan.copy(alpha = 0.9f), glow = true).padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Caption("Temps sur les applis")
@@ -163,7 +163,7 @@ private fun AppCard(label: String, pkg: String, ms: Long, total: Long, rule: Rul
         Modifier
             .fillMaxWidth()
             .neonFrame(
-                if (rule == null) Neon.Off else color.copy(alpha = 0.7f),
+                if (rule == null) Neon.Off else color.copy(alpha = 0.95f),
                 if (alert) Neon.PanelMagenta else Neon.Panel,
                 glow = alert,
             )
