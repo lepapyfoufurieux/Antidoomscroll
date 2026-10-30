@@ -136,16 +136,18 @@ fun Modifier.neonFrame(color: Color, fill: Color = Neon.Panel, glow: Boolean = f
 /** Fond quadrillé des écrans principaux. */
 fun Modifier.neonGrid(color: Color): Modifier = drawBehind {
     drawRect(Neon.Bg)
-    val step = 26.dp.toPx()
+    // Pas entier et traits d'un pixel centrés sur un pixel : sinon l'anticrénelage rend certaines lignes
+    // plus pâles ou plus épaisses que d'autres (26 dp ne tombe pas sur un nombre entier de pixels).
+    val step = 26.dp.roundToPx()
     val line = color.copy(alpha = 0.09f)
-    var x = 0f
+    var x = 0
     while (x < size.width) {
-        drawLine(line, Offset(x, 0f), Offset(x, size.height))
+        drawLine(line, Offset(x + 0.5f, 0f), Offset(x + 0.5f, size.height), strokeWidth = 1f)
         x += step
     }
-    var y = 0f
+    var y = 0
     while (y < size.height) {
-        drawLine(line, Offset(0f, y), Offset(size.width, y))
+        drawLine(line, Offset(0f, y + 0.5f), Offset(size.width, y + 0.5f), strokeWidth = 1f)
         y += step
     }
 }
@@ -153,10 +155,10 @@ fun Modifier.neonGrid(color: Color): Modifier = drawBehind {
 /** Lignes d'écran cathodique, pour l'écran de blocage. */
 fun Modifier.scanlines(): Modifier = drawBehind {
     drawRect(Neon.Bg)
-    val step = 4.dp.toPx()
-    var y = 0f
+    val step = 4.dp.roundToPx()
+    var y = 0
     while (y < size.height) {
-        drawLine(Neon.Magenta.copy(alpha = 0.09f), Offset(0f, y), Offset(size.width, y))
+        drawLine(Neon.Magenta.copy(alpha = 0.09f), Offset(0f, y + 0.5f), Offset(size.width, y + 0.5f), strokeWidth = 1f)
         y += step
     }
 }
