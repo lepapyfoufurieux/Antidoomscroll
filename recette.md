@@ -58,8 +58,6 @@ En version debug, la liste des limites propose aussi 2 et 7 min (alerte à 2 min
 
 ## Plages horaires et mode focus
 
-En version debug, l'onglet Focus propose aussi un focus de 2 min.
-
 | # | Scénario | Attendu |
 |---|---|---|
 | P1 | Applis › « Options pour l'application » › « Plages : aucune », ajouter une plage | Elle apparaît dans la liste (« Tous les jours, 22:00 → 07:00 le lendemain »). Sans jour coché, « Ajouter » est inactif. |

@@ -1,9 +1,14 @@
 package com.antiscrolling.ui.focus
 
 import android.annotation.SuppressLint
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -29,16 +34,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.antiscrolling.AppContainer
-import com.antiscrolling.BuildConfig
 import com.antiscrolling.domain.FocusSession
 import com.antiscrolling.ui.Caption
-import com.antiscrolling.ui.ChoiceGrid
+import com.antiscrolling.ui.LockOpen
 import com.antiscrolling.ui.Neon
 import com.antiscrolling.ui.NeonButton
 import com.antiscrolling.ui.NeonRing
 import com.antiscrolling.ui.ScreenHeader
 import com.antiscrolling.ui.durationLabel
 import com.antiscrolling.ui.glow
+import com.antiscrolling.ui.neonGlow
 import com.antiscrolling.ui.hhmm
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -46,8 +51,7 @@ import java.time.Duration
 import java.time.Instant
 import java.time.ZonedDateTime
 
-// En debug, un focus de 2 min pour la recette.
-private val FOCUS_CHOICES = (if (BuildConfig.DEBUG) listOf(2) else emptyList()) + listOf(5, 15, 30, 45, 60, 120)
+private val FOCUS_CHOICES = listOf(5, 15, 30, 45, 60, 120)
 
 /** [active] : le focus en cours, suivi par l'écran principal qui passe tout au magenta pendant ce temps. */
 @Composable
@@ -108,16 +112,42 @@ fun FocusScreen(container: AppContainer, active: FocusSession?) {
                 lineHeight = 21.sp,
             )
             Box(Modifier.fillMaxWidth().padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
-                NeonRing(Neon.Cyan, 1f, 180.dp, dashed = true) {
-                    Icon(Icons.Filled.Lock, contentDescription = null, tint = Neon.Cyan, modifier = Modifier.size(64.dp))
+                // Au repos : halo discret et cadenas ouvert.
+                NeonRing(Neon.Cyan, 1f, 180.dp, dashed = true, glowRadius = 24.dp, glowAlpha = 0.2f) {
+                    Icon(LockOpen, contentDescription = null, tint = Neon.Cyan, modifier = Modifier.size(64.dp))
                 }
             }
             Caption("Lancer pour")
-            ChoiceGrid(FOCUS_CHOICES, null, 3, ::durationLabel, enabled = tracked > 0, role = Role.Button) { minutes ->
-                val now = Instant.now()
-                scope.launch { container.ruleRepository.startFocus(now, now.plus(Duration.ofMinutes(minutes.toLong()))) }
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                FOCUS_CHOICES.chunked(3).forEach { row ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        row.forEach { minutes ->
+                            LaunchCell(durationLabel(minutes), enabled = tracked > 0, Modifier.weight(1f)) {
+                                val now = Instant.now()
+                                scope.launch { container.ruleRepository.startFocus(now, now.plus(Duration.ofMinutes(minutes.toLong()))) }
+                            }
+                        }
+                    }
+                }
             }
         }
+    }
+}
+
+/** Bouton de lancement de la maquette : cadre bleu, fond teinté, halo léger, durée en gras. */
+@Composable
+private fun LaunchCell(text: String, enabled: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    val color = if (enabled) Neon.Cyan else Neon.Cyan.copy(alpha = 0.4f)
+    Box(
+        modifier
+            .heightIn(min = 56.dp)
+            .then(if (enabled) Modifier.neonGlow(Neon.Cyan, 12.dp, 0.3f) else Modifier)
+            .background(Neon.Cyan.copy(alpha = if (enabled) 0.1f else 0.04f))
+            .border(1.dp, color)
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(text, color = color, fontFamily = Neon.Mono, fontSize = 16.sp, fontWeight = FontWeight.Bold)
     }
 }
 

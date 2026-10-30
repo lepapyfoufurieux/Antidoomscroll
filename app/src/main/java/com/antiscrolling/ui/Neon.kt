@@ -38,6 +38,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.PathFillType
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.addPathNodes
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
@@ -89,7 +93,7 @@ fun nearLimit(rule: Rule?, usedMs: Long): Boolean = rule != null && (rule.quotaS
 fun pressureColor(opensToday: Int): Color = lerp(Neon.Cyan, Neon.Magenta, (opensToday / 4f).coerceIn(0f, 1f))
 
 /** Halo d'un texte. [radius] en pixels : 32 px valent environ les 12 px CSS de la maquette. */
-fun glow(color: Color, radius: Float = 32f) = Shadow(color.copy(alpha = 0.8f), Offset.Zero, radius)
+fun glow(color: Color, radius: Float = 24f) = Shadow(color.copy(alpha = 0.8f), Offset.Zero, radius)
 
 /**
  * Halo tout autour, comme un `box-shadow: 0 0 R` CSS. L'ombre de Compose tombe vers le bas comme une élévation :
@@ -309,11 +313,19 @@ fun UsageBar(fraction: Float, color: Color) {
 
 /** Anneau lumineux : un cercle discret et un arc de [progress] (0 à 1). */
 @Composable
-fun NeonRing(color: Color, progress: Float, size: Dp, dashed: Boolean = false, content: @Composable ColumnScope.() -> Unit) {
+fun NeonRing(
+    color: Color,
+    progress: Float,
+    size: Dp,
+    dashed: Boolean = false,
+    glowRadius: Dp = 28.dp,
+    glowAlpha: Float = 0.55f,
+    content: @Composable ColumnScope.() -> Unit,
+) {
     Column(
         Modifier
             .size(size)
-            .neonGlow(color, 28.dp, 0.55f, circle = true)
+            .neonGlow(color, glowRadius, glowAlpha, circle = true)
             .drawBehind {
                 val stroke = 3.dp.toPx()
                 val arcSize = Size(this.size.width - stroke, this.size.height - stroke)
@@ -331,6 +343,17 @@ fun NeonRing(color: Color, progress: Float, size: Dp, dashed: Boolean = false, c
         content = content,
     )
 }
+
+/** Cadenas ouvert, dans le style de Icons.Filled.Lock (absent des icônes de base de Material). */
+val LockOpen: ImageVector = ImageVector.Builder("LockOpen", 24.dp, 24.dp, 24f, 24f)
+    .addPath(
+        addPathNodes("M6 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2zM12 13a2 2 0 1 0 0 4a2 2 0 1 0 0-4z"),
+        pathFillType = PathFillType.EvenOdd,
+        fill = SolidColor(Color.Black),
+    )
+    // Anse soulevée : la branche droite ne rentre plus dans le corps.
+    .addPath(addPathNodes("M7.95 8V4.5a4.05 4.05 0 0 1 8.1 0V5.5"), stroke = SolidColor(Color.Black), strokeLineWidth = 1.9f)
+    .build()
 
 /** Icône de l'appli en néon, dans un cadre de la même couleur. Une case vide tant qu'elle charge ou si l'appli a disparu. */
 @Composable
