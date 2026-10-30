@@ -110,10 +110,11 @@ fun RuleScreen(
                 Text(
                     label.uppercase(),
                     color = if (accent == Neon.Cyan) Neon.Title else accent,
-                    fontSize = 22.sp,
+                    fontFamily = Neon.Display,
+                    fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp,
-                    style = TextStyle(shadow = glow(accent)),
+                    style = TextStyle(shadow = glow(accent, 16f)),
                 )
                 Text("PROFIL ▸ ${rules?.name(profileId).orEmpty().uppercase()}", color = Neon.Yellow, fontFamily = Neon.Mono, fontSize = 11.sp)
             }

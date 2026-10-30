@@ -58,6 +58,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -65,6 +66,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
+import com.antiscrolling.R
 import com.antiscrolling.domain.Rule
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -85,6 +87,7 @@ object Neon {
     val Muted = Color(0xFF8A90B0)
     val Off = Color(0x40FFFFFF)
     val Mono = FontFamily.Monospace
+    val Display = FontFamily(Font(R.font.chakra_petch_bold, FontWeight.Bold)) // titres, police de la maquette
 }
 
 /** Carte en alerte : limite atteinte ou dans les 5 dernières minutes. */
@@ -175,10 +178,12 @@ fun ScreenHeader(tag: String, title: String, color: Color = Neon.Title) {
         Text(
             title.uppercase(),
             color = color,
-            fontSize = 32.sp,
+            fontFamily = Neon.Display,
+            fontSize = 34.sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 1.sp,
-            style = TextStyle(shadow = glow(if (color == Neon.Title) Neon.Cyan else color)),
+            // Halo de la maquette (text-shadow 0 0 12px) ; au-delà, le flou est rogné en rectangle.
+            style = TextStyle(shadow = glow(if (color == Neon.Title) Neon.Cyan else color, 20f)),
         )
     }
 }

@@ -194,7 +194,8 @@ private fun BlockedApp(packageName: String, label: String, alert: Boolean) {
         Text(
             label.uppercase(),
             color = if (alert) color else Neon.Title,
-            fontSize = 28.sp,
+            fontFamily = Neon.Display,
+            fontSize = 30.sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 1.sp,
             textAlign = TextAlign.Center,
