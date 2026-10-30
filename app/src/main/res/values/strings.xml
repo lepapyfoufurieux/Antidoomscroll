@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Antiscrolling</string>
+    <string name="accessibility_description">Détecte quelle appli est ouverte pour afficher l\'écran de blocage des applis que vous avez choisies. Ne lit jamais le contenu de l\'écran. Aucune donnée ne quitte le téléphone.</string>
+    <string name="widget_label">Temps restant</string>
+    <string name="widget_description">Temps restant avant la limite de l\'appli choisie dans Antiscrolling.</string>
+</resources>

@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Antiscrolling Brainstorm</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout : une colonne de lecture, sections en grille de cartes qui passent à 1 colonne sur mobile */
+:root {
+  --bg: #f3f5f6; --surface: #ffffff; --fg: #17222b; --muted: #5a6872;
+  --line: #d9e0e4; --accent: #0f7a6c; --accent-soft: #dcefeb; --warn: #a35a00; --warn-soft: #fbecd6;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1619; --surface: #172126; --fg: #e4ecef; --muted: #93a3ab;
+  --line: #2a373d; --accent: #4cc4b0; --accent-soft: #163a35; --warn: #f0a94a; --warn-soft: #3a2a14; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f1619; --surface: #172126; --fg: #e4ecef; --muted: #93a3ab;
+  --line: #2a373d; --accent: #4cc4b0; --accent-soft: #163a35; --warn: #f0a94a; --warn-soft: #3a2a14; color-scheme: dark }
+
+body { background: var(--bg); color: var(--fg); font: 17px/1.6 var(--body); }
+.wrap { max-width: 980px; margin: 0 auto; padding-block: 48px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 56px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; line-height: 1.15; }
+h1 { font-size: clamp(2rem, 6vw, 3.2rem); font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: 1.6rem; font-weight: 800; }
+h3 { font-size: 1.05rem; font-weight: 600; }
+p { margin: 0; }
+.eyebrow { font: 500 0.75rem var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.lede { color: var(--muted); max-width: 62ch; font-size: 1.1rem; }
+
+header { display: flex; flex-direction: column; gap: 14px; }
+.timer { font: 500 0.85rem var(--mono); color: var(--muted); display: flex; gap: 18px; flex-wrap: wrap; }
+.timer b { color: var(--fg); font-variant-numeric: tabular-nums; }
+
+section { display: flex; flex-direction: column; gap: 20px; }
+.sec-head { display: flex; flex-direction: column; gap: 6px; }
+.sec-head p { color: var(--muted); max-width: 65ch; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.item { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px;
+  display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.item p { color: var(--muted); font-size: 0.95rem; }
+.item.mvp { border-color: var(--accent); }
+.tag { align-self: flex-start; font: 500 0.7rem var(--mono); letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 2px 8px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); }
+.tag.later { background: var(--warn-soft); color: var(--warn); }
+
+.table-box { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: 0.95rem; }
+th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 500 0.72rem var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+tr:last-child td { border-bottom: 0; }
+code { font: 0.85em var(--mono); background: var(--accent-soft); color: var(--accent); padding: 1px 6px; border-radius: 4px; }
+
+.callout { background: var(--accent-soft); border-radius: 10px; padding: 16px 18px; }
+
+.mvp-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; counter-reset: s; }
+.mvp-steps li { counter-increment: s; display: grid; grid-template-columns: 36px 1fr; gap: 12px; align-items: start;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.mvp-steps li::before { content: counter(s); font: 800 1.3rem var(--display); color: var(--accent); }
+.stack { font: 500 0.9rem var(--mono); color: var(--muted); }
+
+.questions { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; }
+footer { color: var(--muted); font-size: 0.9rem; border-top: 1px solid var(--line); padding-top: 18px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Appli Android · brainstorm</span>
+    <h1>Antiscrolling : reprendre la main sur son temps d'écran</h1>
+    <p class="lede">Une appli qui bloque ou freine l'accès aux applis chronophages. Voici les idées de fonctionnalités, les contraintes Android et une première version minimale.</p>
+    <div class="timer"><span>Idées <b>17</b></span><span>Dans le MVP <b>3</b></span><span>Plateforme <b>Android</b></span></div>
+  </header>
+
+  <section>
+    <div class="sec-head"><span class="eyebrow">Cœur</span><h2>Le blocage</h2></div>
+    <div class="grid">
+      <div class="item mvp"><span class="tag">MVP</span><h3>Liste d'applis bloquées</h3><p>Choisir les applis parmi celles installées sur le téléphone.</p></div>
+      <div class="item mvp"><span class="tag">MVP</span><h3>Écran de blocage</h3><p>Un écran s'affiche par-dessus l'appli dès qu'on l'ouvre.</p></div>
+      <div class="item"><h3>Blocage total ou quota</h3><p>Bloquer complètement, ou autoriser par exemple 30 min de TikTok par jour.</p></div>
+      <div class="item"><h3>Plages horaires</h3><p>Bloqué de 22h à 7h, ou pendant les heures de travail.</p></div>
+      <div class="item"><h3>Mode focus</h3><p>Un bouton pour tout bloquer pendant 2 heures.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="eyebrow">Plutôt qu'un mur</span><h2>Les frictions</h2>
+      <p>Souvent plus efficaces qu'un blocage pur, parce qu'on cherche moins à les contourner.</p></div>
+    <div class="grid">
+      <div class="item mvp"><span class="tag">MVP</span><h3>Délai d'attente</h3><p>Patienter 10 à 30 s avant l'ouverture, le temps de se demander si on en a vraiment envie.</p></div>
+      <div class="item"><h3>Question d'intention</h3><p>« Pourquoi tu ouvres cette appli ? » : message précis, ennui ou habitude.</p></div>
+      <div class="item"><h3>Petite tâche</h3><p>Taper une phrase ou résoudre un calcul avant d'accéder à l'appli.</p></div>
+      <div class="item"><h3>Durée choisie à l'ouverture</h3><p>On choisit « 5 min », puis l'appli se bloque à nouveau.</p></div>
+      <div class="item"><h3>Délai croissant</h3><p>L'attente s'allonge à chaque ouverture dans la journée.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="eyebrow">Mesurer</span><h2>Statistiques</h2></div>
+    <div class="grid">
+      <div class="item mvp"><span class="tag">MVP</span><h3>Temps par appli</h3><p>Aujourd'hui et sur la semaine.</p></div>
+      <div class="item"><h3>Déverrouillages et ouvertures</h3><p>Combien de fois on déverrouille le téléphone et ouvre chaque appli.</p></div>
+      <div class="item"><h3>Séries</h3><p>Nombre de jours d'affilée sous l'objectif.</p></div>
+      <div class="item"><h3>Résumé hebdo</h3><p>Comparaison avec la semaine précédente.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="eyebrow">Bonus</span><h2>Motivation</h2></div>
+    <div class="grid">
+      <div class="item"><h3>Widget</h3><p>Le temps restant affiché sur l'écran d'accueil.</p></div>
+      <div class="item"><h3>Alerte avant la limite</h3><p>Notification « 5 min restantes ».</p></div>
+      <div class="item"><h3>Notifications masquées</h3><p>Retirer les notifications des applis bloquées.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="eyebrow">Ce qui oriente les choix</span><h2>Contraintes techniques Android</h2></div>
+    <div class="table-box">
+      <table>
+        <thead><tr><th>Besoin</th><th>API Android</th><th>Remarque</th></tr></thead>
+        <tbody>
+          <tr><td>Savoir quelle appli est ouverte</td><td><code>AccessibilityService</code> ou <code>UsageStatsManager</code></td><td>L'accessibilité réagit instantanément mais Google Play examine son usage de près. UsageStats vérifie à intervalles et réagit avec un peu de retard.</td></tr>
+          <tr><td>Afficher l'écran de blocage</td><td>Activity par-dessus, ou <code>SYSTEM_ALERT_WINDOW</code></td><td>Avec l'accessibilité, lancer une Activity suffit.</td></tr>
+          <tr><td>Mesurer le temps passé</td><td><code>UsageStatsManager</code></td><td>L'utilisateur doit donner l'autorisation à la main dans les paramètres.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="callout">Pour un usage perso (APK installé directement, sans Play Store), le service d'accessibilité est la voie la plus simple et la plus fiable.</p>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="eyebrow">Première version</span><h2>Le MVP proposé</h2></div>
+    <ol class="mvp-steps">
+      <li><p>Choisir des applis dans la liste de celles installées.</p></li>
+      <li><p>Détecter leur ouverture avec le service d'accessibilité et afficher un écran de blocage, avec un délai de 15 s et un bouton « ouvrir quand même 5 min ».</p></li>
+      <li><p>Un écran qui affiche le temps passé aujourd'hui par appli.</p></li>
+    </ol>
+    <p class="stack">Kotlin · Jetpack Compose · DataStore</p>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="eyebrow">À trancher</span><h2>Questions ouvertes</h2></div>
+    <ul class="questions">
+      <li>Quelles idées garder en priorité ?</li>
+      <li>Blocage dur, ou plutôt des frictions ?</li>
+      <li>Appli perso, ou publication sur le Play Store ?</li>
+    </ul>
+  </section>
+
+  <footer>Non vérifié : les règles actuelles de Google Play sur le service d'accessibilité. En cas de publication, ce choix technique peut entraîner un refus.</footer>
+</div>

@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Antiscrolling Architecture</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout : document technique en une colonne, mêmes repères visuels que la page de brainstorm */
+:root {
+  --bg: #f3f5f6; --surface: #ffffff; --fg: #17222b; --muted: #5a6872;
+  --line: #d9e0e4; --accent: #0f7a6c; --accent-soft: #dcefeb; --warn: #a35a00; --warn-soft: #fbecd6;
+  --code-bg: #eef2f3;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1619; --surface: #172126; --fg: #e4ecef; --muted: #93a3ab;
+  --line: #2a373d; --accent: #4cc4b0; --accent-soft: #163a35; --warn: #f0a94a; --warn-soft: #3a2a14;
+  --code-bg: #121b1f; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f1619; --surface: #172126; --fg: #e4ecef; --muted: #93a3ab;
+  --line: #2a373d; --accent: #4cc4b0; --accent-soft: #163a35; --warn: #f0a94a; --warn-soft: #3a2a14;
+  --code-bg: #121b1f; color-scheme: dark }
+
+body { background: var(--bg); color: var(--fg); font: 17px/1.6 var(--body); }
+.wrap { max-width: 980px; margin: 0 auto; padding-block: 48px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 56px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; line-height: 1.15; }
+h1 { font-size: clamp(2rem, 6vw, 3.2rem); font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: 1.6rem; font-weight: 800; }
+h3 { font-size: 1.05rem; font-weight: 600; }
+p { margin: 0; }
+.eyebrow { font: 500 0.75rem var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.lede { color: var(--muted); max-width: 65ch; font-size: 1.1rem; }
+
+header { display: flex; flex-direction: column; gap: 14px; }
+.meta { font: 500 0.85rem var(--mono); color: var(--muted); display: flex; gap: 18px; flex-wrap: wrap; }
+.meta b { color: var(--fg); }
+
+nav.toc { display: flex; flex-wrap: wrap; gap: 8px; }
+nav.toc a { font: 500 0.8rem var(--mono); color: var(--accent); text-decoration: none; padding: 4px 10px;
+  border: 1px solid var(--line); border-radius: 99px; background: var(--surface); }
+nav.toc a:hover, nav.toc a:focus-visible { border-color: var(--accent); outline: none; }
+
+section { display: flex; flex-direction: column; gap: 20px; scroll-margin-top: 16px; }
+.sec-head { display: flex; flex-direction: column; gap: 6px; }
+.sec-head p, .prose { color: var(--muted); max-width: 68ch; }
+.prose b { color: var(--fg); }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.item { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px;
+  display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.item p { color: var(--muted); font-size: 0.95rem; }
+
+.box { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.diagram { padding: 16px; }
+.diagram pre.mermaid { margin: 0; background: transparent; }
+table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 0.95rem; }
+th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 500 0.72rem var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+tr:last-child td { border-bottom: 0; }
+td:first-child { font-weight: 600; }
+
+code { font: 0.85em var(--mono); background: var(--accent-soft); color: var(--accent); padding: 1px 6px; border-radius: 4px; }
+pre.code { margin: 0; padding: 16px 18px; background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px;
+  overflow-x: auto; font: 0.85rem/1.55 var(--mono); color: var(--fg); }
+pre.code .c { color: var(--muted); }
+pre.code .k { color: var(--accent); }
+
+.tag { align-self: flex-start; font: 500 0.7rem var(--mono); letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 2px 8px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); white-space: nowrap; }
+.tag.warn { background: var(--warn-soft); color: var(--warn); }
+
+.callout { background: var(--accent-soft); border-radius: 10px; padding: 16px 18px; max-width: 75ch; }
+.callout.warn { background: var(--warn-soft); }
+
+.phases { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; counter-reset: s; }
+.phases li { counter-increment: s; display: grid; grid-template-columns: 36px 1fr; gap: 12px; align-items: start;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.phases li::before { content: counter(s); font: 800 1.3rem var(--display); color: var(--accent); }
+.phases li > div { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.phases li p { color: var(--muted); font-size: 0.95rem; }
+
+footer { color: var(--muted); font-size: 0.9rem; border-top: 1px solid var(--line); padding-top: 18px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Appli Android · conception technique</span>
+    <h1>Architecture du code d'Antiscrolling</h1>
+    <p class="lede">Comment organiser le code pour couvrir toutes les fonctionnalités retenues : blocage, frictions, statistiques et motivation, sans réécriture entre le MVP et la version complète, et publiable sur le Play Store.</p>
+    <div class="meta"><span>Langage <b>Kotlin</b></span><span>UI <b>Jetpack Compose</b></span><span>minSdk <b>28</b></span><span>Modules Gradle <b>1</b></span><span>Distribution <b>Play Store</b></span></div>
+    <nav class="toc" aria-label="Sommaire">
+      <a href="#principes">Principes</a><a href="#vue">Vue d'ensemble</a><a href="#packages">Packages</a>
+      <a href="#composants">Composants</a><a href="#moteur">Moteur de règles</a><a href="#flux">Flux d'ouverture</a>
+      <a href="#donnees">Données</a><a href="#features">Features → code</a><a href="#permissions">Permissions</a>
+      <a href="#pieges">Points délicats</a><a href="#playstore">Play Store</a><a href="#phases">Ordre d'implémentation</a>
+    </nav>
+  </header>
+
+  <section id="principes">
+    <div class="sec-head"><span class="eyebrow">Choix de base</span><h2>Principes</h2></div>
+    <div class="grid">
+      <div class="item"><h3>Une décision, un seul endroit</h3><p>Toutes les règles (quota, horaires, focus, frictions) sont évaluées par une fonction Kotlin pure, <code>RuleEngine.decide()</code>. Elle ne dépend pas d'Android, donc elle se teste en JUnit simple.</p></div>
+      <div class="item"><h3>Android mesure, on ne duplique pas</h3><p>Le temps passé et les déverrouillages viennent de <code>UsageStatsManager</code>. On ne stocke que ce qu'Android ne garde pas longtemps : un résumé par jour, rattrapé au démarrage du service.</p></div>
+      <div class="item"><h3>Tout en mémoire</h3><p>Le service lit les règles et les accès temporaires en mémoire (<code>StateFlow</code>). Aucune requête en base ni dans UsageStats à chaque changement d'appli. Les écritures en base suivent, en arrière-plan.</p></div>
+      <div class="item"><h3>Pas de framework en trop</h3><p>Un seul module Gradle, une injection de dépendances manuelle (<code>AppContainer</code>), ni WorkManager ni DataStore. Hilt ou le multi-module pourront venir si l'appli grossit.</p></div>
+      <div class="item"><h3>Rien ne quitte le téléphone</h3><p>Pas de permission <code>INTERNET</code>, et <code>allowBackup="false"</code> pour éviter la sauvegarde Google Drive. Les données restent sur l'appareil, ce qui simplifie la déclaration d'accessibilité et le formulaire « Sécurité des données » du Play Store.</p></div>
+    </div>
+  </section>
+
+  <section id="vue">
+    <div class="sec-head"><span class="eyebrow">Les briques</span><h2>Vue d'ensemble</h2>
+      <p>Trois services système alimentent le moteur de règles. L'interface et le widget lisent les mêmes repositories.</p></div>
+    <div class="box diagram">
+<pre class="mermaid">
+flowchart LR
+  subgraph Systeme["Android"]
+    OS["Changement de fenêtre"]
+    NOTIF["Notifications"]
+    USM[("UsageStatsManager")]
+  end
+  subgraph Services["service/"]
+    A11Y["BlockerAccessibilityService"]
+    NLS["NotificationBlockerService"]
+    QW["QuotaWatcher"]
+  end
+  subgraph Domaine["domain/"]
+    RE["RuleEngine"]
+  end
+  subgraph Data["data/"]
+    REPO["Repositories"]
+    DB[("Room")]
+  end
+  subgraph UI["ui/ + widget/"]
+    MAIN["MainActivity"]
+    BLOCK["BlockActivity"]
+    WID["Widget Glance"]
+  end
+  WORK["HistoryBackfill"]
+
+  OS --> A11Y
+  NOTIF --> NLS
+  A11Y --> RE
+  NLS --> RE
+  QW --> RE
+  RE --> REPO
+  A11Y -- "Block / Friction" --> BLOCK
+  QW -- "temps écoulé" --> BLOCK
+  BLOCK --> REPO
+  MAIN --> REPO
+  WID --> REPO
+  REPO --> DB
+  REPO --> USM
+  A11Y -. au démarrage .-> WORK
+  WORK --> USM
+  WORK --> DB
+</pre>
+    </div>
+  </section>
+
+  <section id="packages">
+    <div class="sec-head"><span class="eyebrow">Arborescence</span><h2>Organisation des packages</h2>
+      <p>Découpage par couche : <code>domain</code> ne connaît rien d'Android, <code>data</code> parle à Room et au système, <code>service</code> et <code>ui</code> sont les points d'entrée.</p></div>
+<pre class="code">app/src/main/java/com/antiscrolling/
+├── App.kt                         <span class="c">// Application, crée l'AppContainer</span>
+├── AppContainer.kt                <span class="c">// injection manuelle : DB, repositories, engine</span>
+│
+├── domain/                        <span class="c">// Kotlin pur, 100 % testable</span>
+│   ├── Rule.kt                    <span class="c">// Rule (réglages et frictions), Schedule, FocusSession</span>
+│   ├── Profile.kt                 <span class="c">// Profile, RuleSet (règles de chaque profil, profil actif)</span>
+│   ├── Decision.kt                <span class="c">// Allow / Block / Friction</span>
+│   ├── Friction.kt                <span class="c">// Step, tâches, enchaînement des frictions (FrictionProgress), OpenEvent</span>
+│   ├── RuleEngine.kt              <span class="c">// decide(règle, now, contexte)</span>
+│   ├── UsageCalculator.kt         <span class="c">// temps du jour à partir des événements UsageStats</span>
+│   └── StatsCalculator.kt         <span class="c">// séries, comparaison hebdo</span>
+│
+├── data/
+│   ├── db/                        <span class="c">// AppDatabase, entités, DAO Room</span>
+│   ├── RuleRepository.kt          <span class="c">// règles + horaires + focus, exposés en StateFlow</span>
+│   ├── UsageRepository.kt         <span class="c">// lecture UsageStatsManager</span>
+│   ├── EventRepository.kt         <span class="c">// ouvertures, intentions ; accès temporaires en mémoire, écrits en arrière-plan</span>
+│   ├── HistoryBackfill.kt         <span class="c">// recopie dans Room les jours manquants</span>
+│   └── InstalledApps.kt          <span class="c">// liste des applis lançables</span>
+│
+├── service/
+│   ├── BlockerAccessibilityService.kt
+│   ├── NotificationBlockerService.kt
+│   └── QuotaWatcher.kt            <span class="c">// rappelle decide() toutes les 15 s pendant qu'une appli suivie est ouverte</span>
+│
+├── ui/
+│   ├── MainActivity.kt            <span class="c">// onboarding puis onglets Aujourd'hui / Applis / Profils / Focus / Stats</span>
+│   ├── onboarding/                <span class="c">// écran d'information + consentement, puis permissions</span>
+│   ├── home/                      <span class="c">// temps du jour ; options, ouvertures et raisons des applis freinées</span>
+│   ├── apps/                      <span class="c">// choix des applis suivies</span>
+│   ├── rules/                     <span class="c">// réglages d'une appli (RuleScreen) et ses plages</span>
+│   ├── profiles/                  <span class="c">// profils et leurs horaires</span>
+│   ├── focus/                     <span class="c">// lancer un mode focus</span>
+│   ├── stats/                     <span class="c">// semaine, séries, ouvertures</span>
+│   └── block/
+│       ├── BlockActivity.kt       <span class="c">// écran affiché par-dessus l'appli</span>
+│       └── steps/                 <span class="c">// DelayStep, IntentStep, TaskStep, DurationStep</span>
+│
+├── widget/TimeLeftWidget.kt       <span class="c">// Glance</span>
+└── notif/Notifier.kt              <span class="c">// alerte « 5 min restantes »</span></pre>
+  </section>
+
+  <section id="composants">
+    <div class="sec-head"><span class="eyebrow">Points d'entrée Android</span><h2>Composants système</h2></div>
+    <div class="box">
+      <table>
+        <thead><tr><th>Composant</th><th>Type Android</th><th>Rôle</th></tr></thead>
+        <tbody>
+          <tr><td>BlockerAccessibilityService</td><td><code>AccessibilityService</code></td><td>Reçoit <code>TYPE_WINDOW_STATE_CHANGED</code>, ne garde que les événements dont <code>className</code> est une vraie Activity, en déduit l'appli au premier plan, appelle le moteur et lance <code>BlockActivity</code> si besoin. Ne lit jamais le contenu des écrans (<code>canRetrieveWindowContent="false"</code>) : choix assumé, on bloque l'appli entière, pas seulement les Reels ou les Shorts.</td></tr>
+          <tr><td>BlockActivity</td><td>Activity plein écran</td><td>Affiche le blocage ou la suite de frictions. <code>excludeFromRecents</code>, <code>taskAffinity</code> séparée. « Retour » ou « Renoncer » ramène à l'écran d'accueil.</td></tr>
+          <tr><td>QuotaWatcher</td><td>Coroutine dans le service</td><td>Tant qu'une appli suivie est au premier plan et l'écran allumé, rappelle <code>decide()</code> toutes les 15 s, avec <code>usedTodayMs</code> = temps au début de la session + temps écoulé. Réévalue aussi au déverrouillage (<code>ACTION_USER_PRESENT</code>). Envoie l'alerte « 5 min restantes ».</td></tr>
+          <tr><td>NotificationBlockerService</td><td><code>NotificationListenerService</code></td><td>Met en attente (<code>snoozeNotification</code>) les notifications d'une appli bloquée jusqu'à la fin du blocage, au lieu de les supprimer.</td></tr>
+          <tr><td>HistoryBackfill</td><td>Fonction appelée au démarrage du service et à l'ouverture des stats</td><td>Recopie dans Room tous les jours manquants encore disponibles dans UsageStats (temps par appli, déverrouillages). Sans doublon, donc un jour raté se rattrape.</td></tr>
+          <tr><td>TimeLeftWidget</td><td>Glance <code>AppWidget</code></td><td>Affiche le temps restant. Rafraîchi chaque minute par le service d'accessibilité pendant l'usage de l'appli affichée, et quand on change l'appli affichée. Android le relance aussi toutes les 30 min.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="moteur">
+    <div class="sec-head"><span class="eyebrow">Le cœur</span><h2>Le moteur de règles</h2>
+      <p>Une seule fonction reçoit tout ce dont elle a besoin et rend une décision. Les règles sont vérifiées dans un ordre fixe : la première qui s'applique gagne.</p></div>
+<pre class="code"><span class="k">sealed interface</span> Decision {
+    <span class="k">data object</span> Allow : Decision
+    <span class="k">data class</span> Block(<span class="k">val</span> reason: Reason) : Decision          <span class="c">// FOCUS, SCHEDULE, QUOTA</span>
+    <span class="k">data class</span> Friction(<span class="k">val</span> delaySec: Int, <span class="k">val</span> steps: List&lt;Step&gt;) : Decision
+}
+
+<span class="k">data class</span> Context(
+    <span class="k">val</span> usedTodayMs: Long,        <span class="c">// début de session (UsageCalculator) + temps écoulé</span>
+    <span class="k">val</span> grantUntil: Instant?,     <span class="c">// accès temporaire « 5 min », lu en mémoire</span>
+    <span class="k">val</span> focus: FocusSession?,     <span class="c">// dernière session lancée, active ou non</span>
+    <span class="k">val</span> opensToday: Int = 0,      <span class="c">// ouvertures accordées aujourd'hui (open_event), pour le délai croissant</span>
+)
+
+<span class="k">fun</span> decide(rule: Rule?, now: ZonedDateTime, ctx: Context): Decision = when {
+    rule == <span class="k">null</span> || !rule.enabled                        -&gt; Decision.Allow
+    ctx.focus?.isActive(now) == <span class="k">true</span>                   -&gt; Decision.Block(Reason.FOCUS)
+    rule.schedules.any { it.contains(now) }             -&gt; Decision.Block(Reason.SCHEDULE)
+    rule.quotaReached(ctx.usedTodayMs)                  -&gt; Decision.Block(Reason.QUOTA)
+    ctx.grantUntil?.isAfter(now.toInstant()) == <span class="k">true</span>     -&gt; Decision.Allow   <span class="c">// un accès ne lève que la friction</span>
+    <span class="k">else</span>                                                -&gt; rule.friction(ctx.opensToday)   <span class="c">// Allow si aucune friction</span>
+}</pre>
+    <p class="prose">Les <b>blocages durs</b> (focus, plage horaire, quota) passent avant l'accès temporaire : choisir « 30 min » à 21h58 ne traverse pas la plage de 22h, et un accès ne dépasse jamais le quota. <code>now</code> est un <code>ZonedDateTime</code> pour que minuit et les changements d'heure soient justes.</p>
+    <p class="prose">Les <b>profils</b> choisissent les règles avant le moteur. Chaque profil a ses propres réglages par appli et des horaires où il est actif. <code>RuleSet.at(now)</code> rend les règles du profil actif : le plus ancien profil activé dont un horaire contient <code>now</code> (ou activé sans horaire : il s'applique tout le temps), sinon le profil « Par défaut », qui n'a pas d'horaire et s'applique le reste du temps. <code>decide()</code> ne connaît pas les profils. Le focus reste commun à tous les profils, et le temps du jour compte pour l'appli, quel que soit le profil. Un nouveau profil copie les réglages du profil par défaut.</p>
+    <p class="prose">Le <b>délai croissant</b> se calcule dans <code>Rule.friction(opensToday)</code> : <code>délai de base + ouvertures du jour × incrément</code>, plafonné à 2 min (ou au délai de base s'il est plus long). Les étapes (<code>Step</code>) sont la liste ordonnée des frictions activées pour l'appli : attente, question d'intention, petite tâche, choix de durée.</p>
+  </section>
+
+  <section id="flux">
+    <div class="sec-head"><span class="eyebrow">Exemple</span><h2>Flux d'ouverture d'une appli</h2>
+      <p>Instagram est réglé avec un délai, une question d'intention et le choix de durée.</p></div>
+    <div class="box diagram">
+<pre class="mermaid">
+sequenceDiagram
+  actor U as Utilisateur
+  participant OS as Android
+  participant S as AccessibilityService
+  participant E as RuleEngine
+  participant B as BlockActivity
+  participant W as QuotaWatcher
+  U->>OS: ouvre Instagram
+  OS->>S: TYPE_WINDOW_STATE_CHANGED
+  S->>E: decide(règle, maintenant, contexte)
+  E-->>S: Friction(25 s, intention + durée)
+  S->>B: startActivity
+  B->>U: attente puis « Pourquoi ? »
+  U->>B: choisit 5 min
+  B->>B: enregistre accès temporaire (en mémoire) + ouverture
+  B-->>OS: finish(), Instagram reprend
+  S->>W: surveiller tant qu'Instagram est ouvert
+  loop toutes les 15 s
+    W->>E: decide(règle, maintenant, contexte)
+  end
+  E-->>W: Block (accès expiré)
+  W->>B: nouveau blocage
+</pre>
+    </div>
+  </section>
+
+  <section id="donnees">
+    <div class="sec-head"><span class="eyebrow">Room</span><h2>Modèle de données</h2>
+      <p>Les réglages simples (onboarding terminé, appli affichée dans le widget, consentement donné) vont dans <code>SharedPreferences</code>. Tout le reste est dans Room.</p></div>
+    <div class="box">
+      <table>
+        <thead><tr><th>Table</th><th>Colonnes principales</th><th>Sert à</th></tr></thead>
+        <tbody>
+          <tr><td>profile</td><td><code>id</code>, <code>name</code>, <code>enabled</code></td><td>Profils créés ; le profil « Par défaut » (id 0) n'a pas de ligne</td></tr>
+          <tr><td>profile_schedule</td><td><code>id</code>, <code>profileId</code>, <code>daysMask</code>, <code>startMin</code>, <code>endMin</code></td><td>Horaires où un profil est actif</td></tr>
+          <tr><td>rule</td><td><code>profileId</code> + <code>packageName</code> (clé), <code>enabled</code>, <code>dailyQuotaMin</code>, <code>delaySec</code>, <code>delayIncrementSec</code>, <code>askIntent</code>, <code>task</code>, <code>askDuration</code>, <code>hideNotifications</code></td><td>Liste des applis suivies et leurs réglages</td></tr>
+          <tr><td>schedule</td><td><code>id</code>, <code>profileId</code>, <code>packageName</code>, <code>daysMask</code>, <code>startMin</code>, <code>endMin</code></td><td>Plages horaires (une règle peut en avoir plusieurs)</td></tr>
+          <tr><td>focus_session</td><td><code>id</code>, <code>startAt</code>, <code>endAt</code></td><td>Mode focus, applique un blocage à toutes les applis suivies</td></tr>
+          <tr><td>grant</td><td><code>packageName</code> (clé), <code>until</code></td><td>Accès temporaire après une friction</td></tr>
+          <tr><td>open_event</td><td><code>id</code>, <code>packageName</code>, <code>at</code>, <code>outcome</code>, <code>intent</code>, <code>grantedMin</code></td><td>Délai croissant, nombre d'ouvertures (seule source), raisons d'ouverture</td></tr>
+          <tr><td>daily_usage</td><td><code>date</code> + <code>packageName</code> (clé), <code>foregroundMs</code></td><td>Historique du temps pour les séries et le résumé hebdo</td></tr>
+          <tr><td>daily_unlocks</td><td><code>date</code> (clé), <code>count</code></td><td>Historique des déverrouillages</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="prose">Le temps du jour se calcule dans <code>UsageCalculator</code>, une fonction pure qui reçoit les événements <code>ACTIVITY_RESUMED</code> / <code>ACTIVITY_PAUSED</code> de <code>queryEvents()</code>, plus précis que les totaux agrégés. Elle gère les applis à plusieurs activités, un <code>PAUSED</code> manquant, une session commencée avant minuit et une appli encore ouverte. Les déverrouillages viennent des événements <code>KEYGUARD_HIDDEN</code>, d'où le minSdk 28.</p>
+    <p class="prose"><b>Migrations.</b> Avant la première publication, effacer la base à chaque changement de schéma suffit. Après, chaque changement de schéma a sa migration Room, avec <code>exportSchema</code> activé, pour ne pas perdre l'historique des utilisateurs.</p>
+  </section>
+
+  <section id="features">
+    <div class="sec-head"><span class="eyebrow">Traçabilité</span><h2>Chaque fonctionnalité dans le code</h2></div>
+    <div class="box">
+      <table>
+        <thead><tr><th>Fonctionnalité</th><th>Où elle vit</th></tr></thead>
+        <tbody>
+          <tr><td>Liste d'applis bloquées</td><td><code>ui/apps</code> + <code>InstalledApps</code> + table <code>rule</code></td></tr>
+          <tr><td>Écran de blocage</td><td><code>BlockActivity</code>, lancée par le service d'accessibilité</td></tr>
+          <tr><td>Blocage total ou quota</td><td>Blocage total : une plage « toute la journée » tous les jours (début = fin). Quota : <code>dailyQuotaMin</code> dans <code>RuleEngine</code>, échéance gérée par <code>QuotaWatcher</code></td></tr>
+          <tr><td>Plages horaires</td><td>Table <code>schedule</code>, <code>Schedule.contains(now)</code>, vérifié toutes les 15 s par le <code>QuotaWatcher</code></td></tr>
+          <tr><td>Mode focus</td><td><code>ui/focus</code> + table <code>focus_session</code></td></tr>
+          <tr><td>Profils</td><td><code>ui/profiles</code> + tables <code>profile</code> et <code>profile_schedule</code>, <code>RuleSet.at(now)</code> ; profil modifié choisi en haut de <code>ui/apps</code></td></tr>
+          <tr><td>Délai d'attente</td><td><code>DelayStep</code></td></tr>
+          <tr><td>Question d'intention</td><td><code>IntentStep</code>, réponse stockée dans <code>open_event.intent</code></td></tr>
+          <tr><td>Petite tâche</td><td><code>TaskStep</code> (phrase à recopier ou calcul)</td></tr>
+          <tr><td>Durée choisie à l'ouverture</td><td><code>DurationStep</code> → accès en mémoire + table <code>grant</code> → <code>QuotaWatcher</code></td></tr>
+          <tr><td>Délai croissant</td><td><code>Rule.friction(opensToday)</code></td></tr>
+          <tr><td>Temps par appli</td><td><code>UsageCalculator</code> (jour) + <code>daily_usage</code> (semaine)</td></tr>
+          <tr><td>Déverrouillages et ouvertures</td><td><code>UsageRepository</code> + <code>daily_unlocks</code> (déverrouillages), <code>open_event</code> (ouvertures)</td></tr>
+          <tr><td>Séries</td><td><code>StatsCalculator.streak()</code> sur <code>daily_usage</code> : jours d'affilée, jusqu'à hier, où aucune appli n'a dépassé sa limite (1 min de marge pour les 15 s du <code>QuotaWatcher</code>, comparé aux limites actuelles)</td></tr>
+          <tr><td>Résumé hebdo</td><td><code>StatsCalculator.weekOverWeek()</code>, écran <code>ui/stats</code></td></tr>
+          <tr><td>Widget</td><td><code>TimeLeftWidget</code></td></tr>
+          <tr><td>Alerte avant la limite</td><td><code>QuotaWatcher</code> → <code>Notifier</code></td></tr>
+          <tr><td>Notifications masquées</td><td><code>NotificationBlockerService</code> (mise en attente) + <code>rule.hideNotifications</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="permissions">
+    <div class="sec-head"><span class="eyebrow">Onboarding</span><h2>Permissions à obtenir</h2>
+      <p>Aucune ne s'accorde par une simple boîte de dialogue, sauf les notifications. L'onboarding ouvre le bon écran des paramètres et vérifie au retour.</p></div>
+    <div class="grid">
+      <div class="item"><span class="tag">Obligatoire</span><h3>Écran d'information et consentement</h3><p>Avant Paramètres › Accessibilité : ce qui est lu (le nom de l'appli ouverte), à quoi ça sert, rien ne quitte le téléphone. Validé par un bouton « J'accepte ». Exigé par Google Play.</p></div>
+      <div class="item"><span class="tag">Obligatoire</span><h3>Service d'accessibilité</h3><p>Détecter l'appli ouverte. Paramètres › Accessibilité.</p></div>
+      <div class="item"><span class="tag">Obligatoire</span><h3>Accès aux données d'usage</h3><p><code>PACKAGE_USAGE_STATS</code>, pour le temps et les quotas.</p></div>
+      <div class="item"><span class="tag">Obligatoire</span><h3>Liste des applis installées</h3><p><code>&lt;queries&gt;</code> sur les intents <code>MAIN/LAUNCHER</code> et <code>MAIN/HOME</code> dans le manifeste. Sans <code>HOME</code>, le lanceur est invisible et le retour à l'accueil passe inaperçu.</p></div>
+      <div class="item"><span class="tag warn">Optionnel</span><h3>Accès aux notifications</h3><p>Uniquement pour masquer les notifications. Ne lit que le package de la notification. Comme l'accessibilité, grisé pour une appli installée hors Play Store (paramètres restreints).</p></div>
+      <div class="item"><span class="tag warn">Optionnel</span><h3>Envoi de notifications</h3><p><code>POST_NOTIFICATIONS</code> (Android 13+), pour l'alerte avant la limite.</p></div>
+      <div class="item"><span class="tag warn">Recommandé</span><h3>Pas d'optimisation de batterie</h3><p>Évite que certains fabricants coupent le service. Ouvre la liste des réglages (<code>ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS</code>), pas la demande directe que Play réserve à certains usages.</p></div>
+      <div class="item"><span class="tag warn">Exclue</span><h3>Internet</h3><p>Pas de permission <code>INTERNET</code> : aucune donnée ne quitte le téléphone.</p></div>
+    </div>
+  </section>
+
+  <section id="pieges">
+    <div class="sec-head"><span class="eyebrow">À prévoir dès le début</span><h2>Points délicats</h2></div>
+    <div class="grid">
+      <div class="item"><h3>Fenêtres parasites</h3><p>Clavier, barre de notifications, dialogues et l'appli elle-même déclenchent aussi des événements. Le service ne garde que ceux dont <code>className</code> est une vraie Activity (<code>getActivityInfo</code> réussit), et ignore son propre package et le lanceur, trouvé avec <code>resolveActivity</code> sur l'intent HOME.</p></div>
+      <div class="item"><h3>Boucle de blocage</h3><p>Quand <code>BlockActivity</code> se ferme, l'appli revient et redéclenche un événement. L'accès temporaire est écrit en mémoire avant <code>finish()</code>, puis en base en arrière-plan. Attendre que Room émette de nouveau laisserait passer l'événement et rebloquerait l'appli.</p></div>
+      <div class="item"><h3>Démarrage à froid</h3><p>Quand Android relance le processus, les règles ne sont pas encore chargées. Le <code>StateFlow</code> commence à <code>null</code> (« pas chargé ») et le service attend le chargement avant sa première décision, sinon tout serait autorisé.</p></div>
+      <div class="item"><h3>Temps qui expire dans l'appli</h3><p>Rester dans une appli ne génère aucun événement. Le <code>QuotaWatcher</code> rappelle <code>decide()</code> toutes les 15 s : fin d'accès, quota, plage horaire et focus sont pris en compte sans calculer d'échéance à part, et sans dépendre de <code>delay()</code>, qui se met en pause écran éteint.</p></div>
+      <div class="item"><h3>Changement de jour</h3><p>Quotas et délai croissant repartent à zéro à minuit. Le moteur reçoit <code>now</code> en <code>ZonedDateTime</code>, ce qui rend minuit et les changements d'heure faciles à tester.</p></div>
+      <div class="item"><h3>Fabricants agressifs</h3><p>Xiaomi, Huawei, Samsung peuvent tuer le service. L'écran d'accueil affiche un avertissement si le service n'est plus actif.</p></div>
+      <div class="item"><h3>Notifications déjà affichées</h3><p><code>NotificationBlockerService</code> met en attente les notifications qui arrivent pendant un blocage, pas celles déjà dans le volet quand il commence. Les notifications en cours (musique, appel) ne sont jamais touchées.</p></div>
+      <div class="item"><h3>Contournements</h3><p>Image dans l'image, écran partagé, version web dans Chrome, service désactivé dans les paramètres : non bloqués pour l'instant. Piste : enregistrer les périodes où le service était coupé et les afficher dans les stats.</p></div>
+    </div>
+  </section>
+
+  <section id="playstore">
+    <div class="sec-head"><span class="eyebrow">Distribution</span><h2>Publication sur le Play Store</h2>
+      <p>Le plus gros risque du projet n'est pas dans le code : c'est l'acceptation du service d'accessibilité par Google.</p></div>
+    <div class="grid">
+      <div class="item"><span class="tag warn">Risque principal</span><h3>Déclaration d'accessibilité</h3><p>Antiscrolling n'est pas un outil d'accessibilité au sens de Google. Formulaire de la Play Console : pourquoi l'API est utilisée, données collectées (aucune), vidéo de l'écran d'information. Argument : UsageStats ne permet ni de réagir à l'ouverture ni d'afficher l'écran de blocage par-dessus l'appli.</p></div>
+      <div class="item"><h3>Règles fixées par l'utilisateur</h3><p>La politique autorise l'automatisation à base de règles définies par l'utilisateur et interdit les actions autonomes. Le moteur de règles reste dans ce cadre : aucun blocage décidé par l'appli elle-même.</p></div>
+      <div class="item"><h3>Sécurité des données</h3><p>Sans permission <code>INTERNET</code>, le formulaire déclare « aucune donnée collectée ni partagée ». Une page de politique de confidentialité en ligne reste obligatoire.</p></div>
+      <div class="item"><h3>Test fermé avant publication</h3><p>Un compte développeur personnel récent doit faire tester l'appli en test fermé (12 testeurs pendant 14 jours, à vérifier dans la Play Console) avant la mise en production.</p></div>
+      <div class="item"><h3>Plan B si refus</h3><p>Détecter l'appli ouverte en interrogeant UsageStats à intervalles réguliers. Demande un foreground service et <code>SYSTEM_ALERT_WINDOW</code>, donc d'autres déclarations. Seule la détection serait à refaire, <code>RuleEngine</code> reste tel quel. Rien n'est construit d'avance.</p></div>
+    </div>
+    <p class="callout warn"><b>Conséquence sur le planning.</b> La version de l'étape 1 part en test fermé dès qu'elle tourne, pour savoir si l'accessibilité est acceptée avant d'écrire les statistiques et le widget.</p>
+  </section>
+
+  <section id="phases">
+    <div class="sec-head"><span class="eyebrow">Feuille de route</span><h2>Ordre d'implémentation</h2>
+      <p>Chaque étape produit une appli utilisable et s'appuie sur la précédente.</p></div>
+    <ol class="phases">
+      <li><div><h3>Squelette et blocage simple <span class="tag">MVP</span></h3><p>AppContainer, Room avec la table <code>rule</code>, onboarding avec écran d'information et consentement, choix des applis, service d'accessibilité, <code>BlockActivity</code> avec délai et bouton « 5 min » (accès en mémoire + table <code>grant</code>), premier <code>QuotaWatcher</code>. Envoi en test fermé pour faire examiner la déclaration d'accessibilité.</p></div></li>
+      <li><div><h3>Temps du jour et historique <span class="tag">MVP</span></h3><p><code>UsageCalculator</code>, <code>UsageRepository</code>, écran d'accueil avec le temps par appli. <code>HistoryBackfill</code> dès maintenant : Android ne garde le détail que quelques jours, ce qui n'est pas recopié est perdu.</p></div></li>
+      <li><div><h3>Quotas et alertes</h3><p>Règle de quota dans le moteur, notification « 5 min restantes ».</p></div></li>
+      <li><div><h3>Plages horaires et mode focus</h3><p>Tables <code>schedule</code> et <code>focus_session</code>, écrans associés.</p></div></li>
+      <li><div><h3>Frictions avancées</h3><p>Question d'intention, petite tâche, choix de durée, délai croissant via <code>open_event</code>.</p></div></li>
+      <li><div><h3>Statistiques</h3><p>Séries, résumé hebdo, nombre de déverrouillages, sur l'historique enregistré depuis l'étape 2.</p></div></li>
+      <li><div><h3>Widget et notifications masquées</h3><p><code>TimeLeftWidget</code> et <code>NotificationBlockerService</code>.</p></div></li>
+      <li><div><h3>Profils</h3><p>Tables <code>profile</code> et <code>profile_schedule</code>, <code>RuleSet</code>, onglet Profils, choix du profil dans Applis.</p></div></li>
+    </ol>
+    <p class="callout"><b>Tests.</b> Politique complète dans <code>tests.md</code> : JUnit pour <code>domain/</code> et pour la colle (<code>QuotaWatcher</code>, repositories) avec des faux, recette écrite sur téléphone (<code>recette.md</code>) pour les services et les écrans. Chaque étape ajoute ses tests et ses scénarios de recette avant d'être terminée.</p>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="eyebrow">Récapitulatif</span><h2>Dépendances</h2></div>
+    <div class="box">
+      <table>
+        <thead><tr><th>Bibliothèque</th><th>Usage</th></tr></thead>
+        <tbody>
+          <tr><td>Jetpack Compose + Material 3</td><td>Toute l'interface, y compris <code>BlockActivity</code></td></tr>
+          <tr><td>Navigation Compose</td><td>Pas utilisé : cinq onglets, et les écrans de réglages s'ouvrent par un état (rememberSaveable + BackHandler). À reconsidérer si les écrans imbriqués se multiplient</td></tr>
+          <tr><td>Room</td><td>Règles, événements, historique</td></tr>
+          <tr><td>Glance</td><td>Widget</td></tr>
+          <tr><td>Coroutines + Flow</td><td>Asynchrone et règles en mémoire</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>Non vérifié : la durée exacte pendant laquelle Android conserve les événements d'usage selon les versions, si Play exige une déclaration pour <code>PACKAGE_USAGE_STATS</code>, et les conditions actuelles du test fermé. L'acceptation du service d'accessibilité par Google n'est pas garantie.</footer>
+</div>
+<!-- Rendu local des diagrammes (la page publiée les dessine elle-même) -->
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({ startOnLoad: true, theme: matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "default" });
+</script>
