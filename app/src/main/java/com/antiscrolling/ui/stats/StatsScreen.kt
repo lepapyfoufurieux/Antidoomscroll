@@ -272,7 +272,7 @@ private fun Bars(days: List<Day>) {
                     Modifier
                         .weight(1f)
                         .fillMaxHeight((day.ms.toFloat() / max).coerceAtLeast(0.02f))
-                        .then(if (isToday) Modifier.neonGlow(color, 12.dp, 0.8f, fill = color) else Modifier.background(color)),
+                        .then(if (isToday) Modifier.neonGlow(color, 18.dp, 0.55f, fill = color) else Modifier.background(color)),
                 )
             }
         }

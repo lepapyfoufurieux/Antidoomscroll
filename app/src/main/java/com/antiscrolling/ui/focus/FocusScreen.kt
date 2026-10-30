@@ -113,7 +113,7 @@ fun FocusScreen(container: AppContainer, active: FocusSession?) {
             )
             Box(Modifier.fillMaxWidth().padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
                 // Au repos : halo discret et cadenas ouvert.
-                NeonRing(Neon.Cyan, 1f, 180.dp, dashed = true, glowRadius = 24.dp, glowAlpha = 0.2f) {
+                NeonRing(Neon.Cyan, 1f, 180.dp, dashed = true, glowRadius = 36.dp, glowAlpha = 0.18f) {
                     Icon(LockOpen, contentDescription = null, tint = Neon.Cyan, modifier = Modifier.size(64.dp))
                 }
             }
@@ -141,7 +141,7 @@ private fun LaunchCell(text: String, enabled: Boolean, modifier: Modifier, onCli
     Box(
         modifier
             .heightIn(min = 56.dp)
-            .then(if (enabled) Modifier.neonGlow(Neon.Cyan, 12.dp, 0.3f) else Modifier)
+            .then(if (enabled) Modifier.neonGlow(Neon.Cyan, 20.dp, 0.25f) else Modifier)
             .background(Neon.Cyan.copy(alpha = if (enabled) 0.1f else 0.04f))
             .border(1.dp, color)
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
