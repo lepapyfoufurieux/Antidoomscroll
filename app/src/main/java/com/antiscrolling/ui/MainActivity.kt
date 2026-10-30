@@ -5,10 +5,16 @@ import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.DateRange
@@ -18,9 +24,12 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -39,6 +48,8 @@ import com.antiscrolling.ui.onboarding.AccessibilityScreen
 import com.antiscrolling.ui.onboarding.ConsentScreen
 import com.antiscrolling.ui.onboarding.UsageAccessScreen
 import com.antiscrolling.ui.stats.StatsScreen
+import kotlinx.coroutines.delay
+import java.time.ZonedDateTime
 
 class MainActivity : ComponentActivity() {
     // Incrémenté à chaque retour dans l'appli, pour revérifier les permissions au retour des paramètres.
@@ -50,7 +61,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
+        enableEdgeToEdge(dark, dark)
         super.onCreate(savedInstanceState)
         val prefs = container.prefs
         setContent {
@@ -83,32 +94,61 @@ class MainActivity : ComponentActivity() {
 
     private companion object {
         const val KEY_CONSENT = "consent"
+        val dark = SystemBarStyle.dark(Color.Transparent.toArgb()) // icônes claires : le fond est toujours sombre
     }
 }
 
 @Composable
 private fun MainTabs(container: AppContainer) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
+    val sessions by container.ruleRepository.latestFocus.collectAsState()
+    // Recalcule « en cours » quand le focus se termine pendant que l'appli est affichée.
+    val tick by produceState(0) {
+        while (true) {
+            delay(15_000)
+            value = value + 1
+        }
+    }
+    val focus = remember(sessions, tick) { sessions?.firstOrNull()?.takeIf { it.isActive(ZonedDateTime.now()) } }
+    // Pendant un focus, tout passe au magenta.
+    val accent = if (focus != null) Neon.Magenta else Neon.Cyan
     Scaffold(
+        containerColor = Color.Transparent,
         bottomBar = {
-            NavigationBar {
+            NavigationBar(
+                containerColor = Neon.Bg,
+                modifier = Modifier.drawBehind { drawLine(accent.copy(alpha = 0.7f), Offset.Zero, Offset(size.width, 0f), 1.dp.toPx()) },
+            ) {
                 TABS.forEachIndexed { index, (label, icon) ->
                     NavigationBarItem(
                         selected = tab == index,
                         onClick = { tab = index },
                         icon = { Icon(icon, contentDescription = null) },
                         label = { Text(label) },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = accent,
+                            selectedTextColor = accent,
+                            indicatorColor = Color.Transparent,
+                            unselectedIconColor = Neon.Muted,
+                            unselectedTextColor = Neon.Muted,
+                        ),
+                        modifier = if (tab == index) {
+                            Modifier.drawBehind { drawLine(accent, Offset(0f, 1.dp.toPx()), Offset(size.width, 1.dp.toPx()), 2.dp.toPx()) }
+                        } else {
+                            Modifier
+                        },
                     )
                 }
             }
         },
+        modifier = Modifier.neonGrid(accent),
     ) { padding ->
         Box(Modifier.padding(padding)) {
             when (tab) {
                 0 -> HomeScreen(container)
                 1 -> AppsScreen(container)
                 2 -> ProfilesScreen(container)
-                3 -> FocusScreen(container)
+                3 -> FocusScreen(container, focus)
                 else -> StatsScreen(container)
             }
         }

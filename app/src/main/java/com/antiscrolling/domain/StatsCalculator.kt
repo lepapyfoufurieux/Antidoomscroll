@@ -25,11 +25,15 @@ object StatsCalculator {
         var count = 0
         while (true) {
             val apps = usage[day] ?: return count
-            if (limitsMin.any { (pkg, min) -> (apps[pkg] ?: 0) > min * 60_000L + TOLERANCE_MS }) return count
+            if (overLimit(apps, limitsMin)) return count
             count++
             day = day.minusDays(1)
         }
     }
+
+    /** Une appli a dépassé sa limite ce jour-là ([apps] : temps par appli du jour). Même marge que la série. */
+    fun overLimit(apps: Map<String, Long>, limitsMin: Map<String, Int>): Boolean =
+        limitsMin.any { (pkg, min) -> (apps[pkg] ?: 0) > min * 60_000L + TOLERANCE_MS }
 
     /** Temps par appli de [packages] sur les 7 derniers jours terminés, et sur les 7 d'avant. */
     fun weekOverWeek(usage: Map<LocalDate, Map<String, Long>>, packages: Set<String>, today: LocalDate): WeekTotals {

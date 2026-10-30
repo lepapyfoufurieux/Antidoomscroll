@@ -14,16 +14,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -35,13 +31,21 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.antiscrolling.AppContainer
 import com.antiscrolling.domain.DEFAULT_PROFILE_ID
 import com.antiscrolling.domain.Profile
 import com.antiscrolling.ui.rules.ScheduleEditor
+import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import com.antiscrolling.ui.Neon
+import com.antiscrolling.ui.NeonButton
+import com.antiscrolling.ui.NeonSwitch
+import com.antiscrolling.ui.ScreenHeader
+import com.antiscrolling.ui.Tag
+import com.antiscrolling.ui.neonFrame
 import com.antiscrolling.ui.rules.scheduleLabel
 import kotlinx.coroutines.launch
 import java.time.ZonedDateTime
@@ -65,35 +69,33 @@ fun ProfilesScreen(container: AppContainer) {
     }
     val active = set.activeProfileId(ZonedDateTime.now())
 
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(vertical = 16.dp)) {
-        Text("Profils", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+    Column(
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 20.dp, top = 28.dp, end = 20.dp, bottom = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        ScreenHeader("Modes de vie", "Profils")
         Text(
             "Chaque profil a ses propres réglages d'applis, choisis dans l'onglet Applis. Un profil activé s'applique pendant ses " +
                 "horaires, ou tout le temps s'il n'en a pas ; le reste du temps, c'est le profil « Par défaut ». " +
                 "Si deux profils s'appliquent en même temps, le plus haut l'emporte.",
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(horizontal = 16.dp),
+            color = Neon.Soft,
+            fontSize = 13.sp,
+            lineHeight = 19.sp,
+            modifier = Modifier.padding(bottom = 4.dp),
         )
-        ListItem(
-            headlineContent = { Text(set.name(DEFAULT_PROFILE_ID)) },
-            supportingContent = { Text(status(DEFAULT_PROFILE_ID == active, "Quand aucun autre profil ne s'applique")) },
-        )
+        ProfileCard(set.name(DEFAULT_PROFILE_ID), "Quand aucun autre profil ne s'applique", DEFAULT_PROFILE_ID == active, enabled = true, custom = false)
         set.profiles.forEach { profile ->
-            HorizontalDivider()
-            ListItem(
-                headlineContent = { Text(profile.name) },
-                supportingContent = { Text(status(profile.id == active, schedulesSummary(profile))) },
-                trailingContent = {
-                    Switch(
-                        checked = profile.enabled,
-                        onCheckedChange = { on -> scope.launch { container.ruleRepository.setProfileEnabled(profile.id, on) } },
-                        modifier = Modifier.semantics { contentDescription = "Activer ${profile.name}" },
-                    )
-                },
-                modifier = Modifier.clickable { opened = profile.id },
+            ProfileCard(
+                profile.name,
+                schedulesSummary(profile),
+                profile.id == active,
+                profile.enabled,
+                custom = true,
+                onOpen = { opened = profile.id },
+                onToggle = { on -> scope.launch { container.ruleRepository.setProfileEnabled(profile.id, on) } },
             )
         }
-        Button(onClick = { creating = true }, modifier = Modifier.fillMaxWidth().padding(16.dp)) { Text("Nouveau profil") }
+        NeonButton("+ Nouveau profil", { creating = true }, Modifier.fillMaxWidth().padding(top = 4.dp), color = Neon.Yellow, filled = true)
     }
 
     if (creating) {
@@ -107,6 +109,58 @@ fun ProfilesScreen(container: AppContainer) {
     }
 }
 
+/** Actif en ce moment : magenta, étiquette ACTIF. Activé : bleu. Désactivé : pointillés gris. Par défaut : gris. */
+@Composable
+private fun ProfileCard(
+    name: String,
+    detail: String,
+    active: Boolean,
+    enabled: Boolean,
+    custom: Boolean,
+    onOpen: (() -> Unit)? = null,
+    onToggle: ((Boolean) -> Unit)? = null,
+) {
+    val color = when {
+        active -> Neon.Magenta
+        custom && enabled -> Neon.Cyan
+        else -> Neon.Muted
+    }
+    val frame = when {
+        active -> Modifier.neonFrame(Neon.Magenta, Neon.PanelMagenta, glow = true)
+        custom && enabled -> Modifier.neonFrame(Neon.Cyan.copy(alpha = 0.85f))
+        custom -> Modifier.neonFrame(Neon.Off, Color.Transparent, dashed = true)
+        else -> Modifier.neonFrame(Neon.Off)
+    }
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .then(frame)
+            .then(if (onOpen != null) Modifier.clickable(onClick = onOpen) else Modifier)
+            .padding(14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(name, color = if (custom && !enabled) Neon.Soft else Neon.Text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                if (active) {
+                    Text(
+                        "ACTIF",
+                        color = Neon.Bg,
+                        fontFamily = Neon.Mono,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp,
+                        modifier = Modifier.background(Neon.Yellow).padding(horizontal = 6.dp, vertical = 3.dp),
+                    )
+                }
+            }
+            Text(detail, color = if (custom) color else Neon.Muted, fontFamily = if (custom) Neon.Mono else null, fontSize = 12.sp)
+        }
+        onToggle?.let { NeonSwitch(enabled, color.takeIf { active } ?: Neon.Cyan, "Activer $name", it) }
+    }
+}
+
 @Composable
 private fun ProfileScreen(container: AppContainer, profile: Profile, onBack: () -> Unit) {
     BackHandler(onBack = onBack)
@@ -117,11 +171,11 @@ private fun ProfileScreen(container: AppContainer, profile: Profile, onBack: () 
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Retour") }
-            Text(profile.name, style = MaterialTheme.typography.headlineSmall)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Retour", tint = Neon.Cyan) }
+            ScreenHeader("Profil", profile.name)
         }
-        Text("Horaires où ce profil est actif", style = MaterialTheme.typography.titleMedium)
+        Tag("Horaires où ce profil est actif")
         Text(
             "Ses réglages d'applis se changent dans l'onglet Applis, en choisissant ce profil en haut de la liste.",
             style = MaterialTheme.typography.bodyMedium,
@@ -132,7 +186,7 @@ private fun ProfileScreen(container: AppContainer, profile: Profile, onBack: () 
             onAdd = { scope.launch { container.ruleRepository.addProfileSchedule(profile.id, it) } },
         )
         HorizontalDivider()
-        OutlinedButton(onClick = { deleting = true }, modifier = Modifier.fillMaxWidth()) { Text("Supprimer le profil") }
+        NeonButton("Supprimer le profil", { deleting = true }, Modifier.fillMaxWidth(), color = Neon.Magenta)
     }
 
     if (deleting) {
@@ -168,7 +222,6 @@ private fun NameDialog(onConfirm: (String) -> Unit, onDismiss: () -> Unit) {
     )
 }
 
-private fun status(active: Boolean, detail: String) = if (active) "Actif en ce moment · $detail" else detail
 
 private fun schedulesSummary(profile: Profile): String = when {
     !profile.enabled -> "Désactivé"

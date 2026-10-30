@@ -99,6 +99,7 @@ app/src/main/java/com/antiscrolling/
 │
 ├── ui/
 │   ├── MainActivity.kt            // onboarding puis onglets Aujourd'hui / Applis / Profils / Focus / Stats
+│   ├── Neon.kt                    // style néon : couleurs, cadres, boutons, grilles de choix, icônes d'applis
 │   ├── onboarding/                // écran d'information + consentement, puis permissions
 │   ├── home/                      // temps du jour ; options, ouvertures et raisons des applis freinées
 │   ├── apps/                      // choix des applis suivies
@@ -230,6 +231,7 @@ Le temps du jour se calcule dans `UsageCalculator`, une fonction pure qui reçoi
 | Widget | `TimeLeftWidget` |
 | Alerte avant la limite | `QuotaWatcher` → `Notifier` |
 | Notifications masquées | `NotificationBlockerService` (mise en attente) + `rule.hideNotifications` |
+| Style néon | `ui/Neon.kt` et `Theme.kt`, toujours sombre. Bleu : état normal. Magenta : alerte (limite dans les 5 dernières minutes ou atteinte, focus en cours, temps du jour au-dessus d'hier, ouvertures répétées). Jaune : repères et réussites (série, baisse sur la semaine, renoncements). Icônes d'applis : calque monochrome d'Android 13+, sinon icône grisée puis teintée |
 
 ## Permissions à obtenir
 
@@ -288,7 +290,7 @@ Chaque étape produit une appli utilisable et s'appuie sur la précédente.
 
 | Bibliothèque | Usage |
 |---|---|
-| Jetpack Compose + Material 3 | Toute l'interface, y compris `BlockActivity` |
+| Jetpack Compose + Material 3 | Toute l'interface, y compris `BlockActivity`. Material 3 sert de base (thème sombre, coins carrés) ; les éléments néon sont dans `ui/Neon.kt` |
 | Navigation Compose | Pas utilisé : cinq onglets, et les écrans de réglages s'ouvrent par un état (rememberSaveable + BackHandler). À reconsidérer si les écrans imbriqués se multiplient |
 | Room | Règles, événements, historique |
 | Glance | Widget |

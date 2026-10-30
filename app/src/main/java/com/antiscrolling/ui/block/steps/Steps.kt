@@ -3,9 +3,6 @@ package com.antiscrolling.ui.block.steps
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,21 +16,34 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.antiscrolling.BuildConfig
 import com.antiscrolling.domain.INTENTS
 import com.antiscrolling.domain.Task
 import com.antiscrolling.domain.TaskKind
+import com.antiscrolling.ui.Caption
+import com.antiscrolling.ui.ChoiceGrid
+import com.antiscrolling.ui.Neon
+import com.antiscrolling.ui.NeonButton
+import com.antiscrolling.ui.NeonRing
 import com.antiscrolling.ui.durationLabel
+import com.antiscrolling.ui.glow
 import kotlinx.coroutines.delay
 
 // En debug, 1 min pour passer la recette vite.
 private val DURATION_CHOICES = (if (BuildConfig.DEBUG) listOf(1) else emptyList()) + listOf(5, 10, 15, 30)
 
+/** [color] : l'anneau passe du bleu au magenta au fil des ouvertures du jour. */
 @Composable
-fun DelayStep(delaySec: Int, continueLabel: String, onDone: () -> Unit) {
+fun DelayStep(delaySec: Int, continueLabel: String, color: Color, onDone: () -> Unit) {
     var remaining by rememberSaveable { mutableIntStateOf(delaySec) }
     LaunchedEffect(Unit) {
         while (remaining > 0) {
@@ -41,20 +51,30 @@ fun DelayStep(delaySec: Int, continueLabel: String, onDone: () -> Unit) {
             remaining--
         }
     }
+    NeonRing(color, if (delaySec == 0) 0f else remaining.toFloat() / delaySec, 150.dp) {
+        Text("$remaining", color = Color.White, fontFamily = Neon.Mono, fontSize = 56.sp, fontWeight = FontWeight.Bold, style = TextStyle(shadow = glow(color)))
+        Caption("secondes")
+    }
     Text(
-        if (remaining > 0) "Une pause avant d'ouvrir : $remaining s" else "Vous voulez vraiment l'ouvrir ?",
-        style = MaterialTheme.typography.bodyLarge,
+        if (remaining > 0) "Une pause de $delaySec s avant d'ouvrir" else "Vous voulez vraiment l'ouvrir ?",
+        color = Neon.Soft,
+        fontSize = 14.sp,
         textAlign = TextAlign.Center,
     )
-    Button(onClick = onDone, enabled = remaining == 0, modifier = Modifier.fillMaxWidth()) { Text(continueLabel) }
+    NeonButton(
+        if (remaining > 0) "Continuer dans $remaining s" else continueLabel,
+        onDone,
+        Modifier.fillMaxWidth(),
+        color = Neon.Yellow,
+        filled = true,
+        enabled = remaining == 0,
+    )
 }
 
 @Composable
 fun IntentStep(label: String, onPick: (String) -> Unit) {
-    Text("Pourquoi ouvrir $label maintenant ?", style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
-    INTENTS.forEach { reason ->
-        FilledTonalButton(onClick = { onPick(reason) }, modifier = Modifier.fillMaxWidth()) { Text(reason) }
-    }
+    Question("Pourquoi ouvrir $label maintenant ?")
+    ChoiceGrid(INTENTS, null, 2, { it }, color = Neon.Magenta, mono = false, role = Role.Button, onPick = onPick)
 }
 
 @Composable
@@ -69,13 +89,11 @@ fun TaskStep(kind: TaskKind, continueLabel: String, onDone: () -> Unit) {
     var answer by rememberSaveable { mutableStateOf("") }
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { focus.requestFocus() } // ouvre le clavier sans avoir à toucher le champ
-    Text(
+    Question(
         when (task) {
             is Task.Copy -> "Recopiez : « ${task.sentence} »"
             is Task.Math -> "Combien font ${task.a} + ${task.b} ?"
         },
-        style = MaterialTheme.typography.bodyLarge,
-        textAlign = TextAlign.Center,
     )
     OutlinedTextField(
         value = answer,
@@ -88,13 +106,16 @@ fun TaskStep(kind: TaskKind, continueLabel: String, onDone: () -> Unit) {
         keyboardActions = KeyboardActions(onDone = { if (task.check(answer)) onDone() }),
         modifier = Modifier.fillMaxWidth().focusRequester(focus),
     )
-    Button(onClick = onDone, enabled = task.check(answer), modifier = Modifier.fillMaxWidth()) { Text(continueLabel) }
+    NeonButton(continueLabel, onDone, Modifier.fillMaxWidth(), color = Neon.Yellow, filled = true, enabled = task.check(answer))
 }
 
 @Composable
 fun DurationStep(onPick: (Int) -> Unit) {
-    Text("Pour combien de temps ?", style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
-    DURATION_CHOICES.forEach { minutes ->
-        FilledTonalButton(onClick = { onPick(minutes) }, modifier = Modifier.fillMaxWidth()) { Text(durationLabel(minutes)) }
-    }
+    Question("Combien de temps ?")
+    ChoiceGrid(DURATION_CHOICES, null, 3, ::durationLabel, role = Role.Button, onPick = onPick)
+}
+
+@Composable
+private fun Question(text: String) {
+    Text(text, color = Neon.Text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
 }

@@ -10,11 +10,14 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
@@ -24,11 +27,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -40,15 +39,29 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.antiscrolling.AppContainer
 import com.antiscrolling.BuildConfig
 import com.antiscrolling.domain.Rule
+import com.antiscrolling.domain.Schedule
 import com.antiscrolling.domain.TaskKind
 import com.antiscrolling.service.NotificationBlockerService
+import com.antiscrolling.ui.ChoiceGrid
+import com.antiscrolling.ui.Neon
+import com.antiscrolling.ui.NeonIcon
+import com.antiscrolling.ui.NeonSwitch
+import com.antiscrolling.ui.Tag
 import com.antiscrolling.ui.durationLabel
+import com.antiscrolling.ui.glow
+import com.antiscrolling.ui.hhmm
+import com.antiscrolling.ui.nearLimit
+import com.antiscrolling.ui.neonFrame
 import com.antiscrolling.widget.TimeLeftWidget
 import kotlinx.coroutines.launch
 
@@ -58,11 +71,19 @@ private val QUOTA_CHOICES = listOf(null) + (if (BuildConfig.DEBUG) listOf(2, 7) 
 private val DELAY_CHOICES = listOf(0, 5, 15, 30, 60)
 private val INCREMENT_CHOICES = listOf(0, 5, 10, 20, 30)
 
-private enum class Editing { QUOTA, DELAY, INCREMENT, TASK }
+private enum class Editing { QUOTA, TASK }
 
 /** Réglages d'une appli suivie : blocages durs, frictions, notifications, widget. */
 @Composable
-fun RuleScreen(container: AppContainer, profileId: Long, packageName: String, label: String, onSchedules: () -> Unit, onBack: () -> Unit) {
+fun RuleScreen(
+    container: AppContainer,
+    profileId: Long,
+    packageName: String,
+    label: String,
+    usedTodayMs: Long,
+    onSchedules: () -> Unit,
+    onBack: () -> Unit,
+) {
     BackHandler(onBack = onBack)
     val rules by container.ruleRepository.rules.collectAsState()
     val rule = rules?.of(profileId)?.get(packageName) ?: return
@@ -73,46 +94,80 @@ fun RuleScreen(container: AppContainer, profileId: Long, packageName: String, la
     var editing by rememberSaveable { mutableStateOf<Editing?>(null) }
     var widgetPackage by rememberSaveable { mutableStateOf(container.prefs.getString(TimeLeftWidget.PREF_PACKAGE, null)) }
     fun update(change: (Rule) -> Rule) = scope.launch { container.ruleRepository.update(profileId, packageName, change) }
+    val accent = if (nearLimit(rule, usedTodayMs)) Neon.Magenta else Neon.Cyan
 
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(vertical = 16.dp)) {
-        Row(Modifier.padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Retour") }
-            Text(label, style = MaterialTheme.typography.headlineSmall)
-        }
-
-        Section("Blocage")
-        Setting("Limite par jour", quotaLabel(rule.dailyQuotaMin)) { editing = Editing.QUOTA }
-        Setting("Plages horaires", schedulesCount(rule.schedules.size), onClick = onSchedules)
-
-        Section("À chaque ouverture")
-        Setting("Pause", if (rule.delaySec == 0) "aucune" else "${rule.delaySec} s") { editing = Editing.DELAY }
-        Setting(
-            "Pause qui s'allonge",
-            if (rule.delayIncrementSec == 0) "non" else "+${rule.delayIncrementSec} s par ouverture du jour",
-        ) { editing = Editing.INCREMENT }
-        Toggle("Demander pourquoi", rule.askIntent) { on -> update { it.copy(askIntent = on) } }
-        Setting("Petite tâche", taskLabel(rule.task)) { editing = Editing.TASK }
-        Toggle("Choisir la durée d'accès", rule.askDuration) { on -> update { it.copy(askDuration = on) } }
-
-        Section("Autres")
-        Toggle(
-            "Masquer les notifications pendant un blocage",
-            rule.hideNotifications,
-            detail = if (rule.hideNotifications && !NotificationBlockerService.isEnabled(context)) {
-                "Accès aux notifications à autoriser dans les paramètres."
-            } else {
-                null
-            },
-        ) { on ->
-            update { it.copy(hideNotifications = on) }
-            if (on && !NotificationBlockerService.isEnabled(context)) {
-                context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+    Column(
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Box(
+                Modifier.size(44.dp).neonFrame(Neon.Cyan.copy(alpha = 0.85f), Color.Transparent).clickable(role = Role.Button, onClick = onBack),
+                contentAlignment = Alignment.Center,
+            ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Retour", tint = Neon.Cyan) }
+            NeonIcon(packageName, accent, 44.dp)
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    label.uppercase(),
+                    color = if (accent == Neon.Cyan) Neon.Title else accent,
+                    fontFamily = Neon.Display,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp,
+                    style = TextStyle(shadow = glow(accent, 16f)),
+                )
+                Text("PROFIL ▸ ${rules?.name(profileId).orEmpty().uppercase()}", color = Neon.Yellow, fontFamily = Neon.Mono, fontSize = 11.sp)
             }
         }
-        Toggle("Afficher dans le widget", widgetPackage == packageName) { on ->
-            widgetPackage = if (on) packageName else null
-            container.prefs.edit().putString(TimeLeftWidget.PREF_PACKAGE, widgetPackage).apply()
-            scope.launch { TimeLeftWidget.refresh(context) }
+
+        Tag("Blocage")
+        Column(Modifier.fillMaxWidth().neonFrame(Neon.Cyan.copy(alpha = 0.85f))) {
+            Setting("Limite par jour", rule.dailyQuotaMin?.let { durationLabel(it) } ?: "aucune") { editing = Editing.QUOTA }
+            HorizontalDivider(color = Neon.Cyan.copy(alpha = 0.35f))
+            Setting("Plages horaires", schedulesValue(rule.schedules), onClick = onSchedules)
+        }
+
+        Tag("À chaque ouverture")
+        Column(Modifier.fillMaxWidth().neonFrame(Neon.Cyan.copy(alpha = 0.85f)).padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text("Pause", color = Neon.Text, fontSize = 15.sp)
+            ChoiceGrid(DELAY_CHOICES, rule.delaySec, DELAY_CHOICES.size, { if (it == 0) "0" else "$it s" }) { sec ->
+                update { it.copy(delaySec = sec) }
+            }
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text("Pause qui s'allonge", color = Neon.Text, fontSize = 15.sp, modifier = Modifier.weight(1f))
+                Text("par ouverture du jour", color = Neon.Muted, fontSize = 12.sp)
+            }
+            ChoiceGrid(INCREMENT_CHOICES, rule.delayIncrementSec, INCREMENT_CHOICES.size, { if (it == 0) "non" else "+$it" }) { sec ->
+                update { it.copy(delayIncrementSec = sec) }
+            }
+            HorizontalDivider(color = Neon.Cyan.copy(alpha = 0.35f))
+            Toggle("Demander pourquoi", rule.askIntent) { on -> update { it.copy(askIntent = on) } }
+            Setting("Petite tâche", taskLabel(rule.task), padded = false) { editing = Editing.TASK }
+            Toggle("Choisir la durée d'accès", rule.askDuration) { on -> update { it.copy(askDuration = on) } }
+        }
+
+        Tag("Autres")
+        Column(Modifier.fillMaxWidth().neonFrame(Neon.Cyan.copy(alpha = 0.85f)).padding(horizontal = 14.dp, vertical = 4.dp)) {
+            Toggle(
+                "Masquer les notifications pendant un blocage",
+                rule.hideNotifications,
+                detail = if (rule.hideNotifications && !NotificationBlockerService.isEnabled(context)) {
+                    "Accès aux notifications à autoriser dans les paramètres."
+                } else {
+                    null
+                },
+            ) { on ->
+                update { it.copy(hideNotifications = on) }
+                if (on && !NotificationBlockerService.isEnabled(context)) {
+                    context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+                }
+            }
+            HorizontalDivider(color = Neon.Cyan.copy(alpha = 0.35f))
+            Toggle("Afficher dans le widget", widgetPackage == packageName) { on ->
+                widgetPackage = if (on) packageName else null
+                container.prefs.edit().putString(TimeLeftWidget.PREF_PACKAGE, widgetPackage).apply()
+                scope.launch { TimeLeftWidget.refresh(context) }
+            }
         }
     }
 
@@ -125,13 +180,6 @@ fun RuleScreen(container: AppContainer, profileId: Long, packageName: String, la
                 askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
-        Editing.DELAY -> ChoiceDialog("Pause", DELAY_CHOICES, rule.delaySec, { if (it == 0) "aucune" else "$it s" }, { editing = null }) { sec ->
-            update { it.copy(delaySec = sec) }
-        }
-        Editing.INCREMENT -> ChoiceDialog(
-            "Pause qui s'allonge", INCREMENT_CHOICES, rule.delayIncrementSec,
-            { if (it == 0) "non" else "+$it s par ouverture" }, { editing = null },
-        ) { sec -> update { it.copy(delayIncrementSec = sec) } }
         Editing.TASK -> ChoiceDialog("Petite tâche", TaskKind.entries, rule.task, ::taskLabel, { editing = null }) { kind ->
             update { it.copy(task = kind) }
         }
@@ -140,33 +188,42 @@ fun RuleScreen(container: AppContainer, profileId: Long, packageName: String, la
 }
 
 @Composable
-private fun Section(title: String) {
-    HorizontalDivider(Modifier.padding(top = 16.dp))
-    Text(
-        title,
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp),
-    )
-}
-
-@Composable
-private fun Setting(title: String, value: String, onClick: () -> Unit) {
-    ListItem(
-        headlineContent = { Text(title) },
-        supportingContent = { Text(value) },
-        modifier = Modifier.clickable(onClick = onClick),
-    )
+private fun Setting(title: String, value: String, padded: Boolean = true, onClick: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .heightIn(min = 52.dp)
+            .clickable(onClick = onClick)
+            .padding(horizontal = if (padded) 14.dp else 0.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(title, color = Neon.Text, fontSize = 15.sp, modifier = Modifier.weight(1f))
+        Text("$value ▸", color = Neon.Cyan, fontFamily = Neon.Mono, fontSize = 13.sp)
+    }
 }
 
 @Composable
 private fun Toggle(title: String, checked: Boolean, detail: String? = null, onChange: (Boolean) -> Unit) {
-    ListItem(
-        headlineContent = { Text(title) },
-        supportingContent = detail?.let { { Text(it, color = MaterialTheme.colorScheme.error) } },
-        trailingContent = { Switch(checked = checked, onCheckedChange = null) },
-        modifier = Modifier.toggleable(value = checked, role = Role.Switch, onValueChange = onChange),
-    )
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .heightIn(min = 52.dp)
+            .toggleable(value = checked, role = Role.Switch, onValueChange = onChange),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(title, color = Neon.Text, fontSize = 15.sp)
+            detail?.let { Text(it, color = Neon.Magenta, fontSize = 12.sp) }
+        }
+        NeonSwitch(checked)
+    }
+}
+
+/** « 22:00 → 07:00 » pour une seule plage, sinon leur nombre. */
+private fun schedulesValue(schedules: List<Schedule>): String {
+    val only = schedules.singleOrNull() ?: return schedulesCount(schedules.size)
+    return if (only.startMin == only.endMin) "toute la journée" else "${hhmm(only.startMin)} → ${hhmm(only.endMin)}"
 }
 
 @Composable

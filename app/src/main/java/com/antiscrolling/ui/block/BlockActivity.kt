@@ -4,20 +4,25 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.addCallback
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -25,12 +30,20 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.antiscrolling.BuildConfig
 import com.antiscrolling.container
 import com.antiscrolling.domain.FrictionProgress
@@ -39,14 +52,26 @@ import com.antiscrolling.domain.Outcome
 import com.antiscrolling.domain.Reason
 import com.antiscrolling.domain.Step
 import com.antiscrolling.domain.TaskKind
+import com.antiscrolling.domain.opensToday
 import com.antiscrolling.ui.AntiscrollingTheme
+import com.antiscrolling.ui.Neon
+import com.antiscrolling.ui.NeonButton
+import com.antiscrolling.ui.NeonIcon
+import com.antiscrolling.ui.NeonRing
+import com.antiscrolling.ui.Tag
 import com.antiscrolling.ui.block.steps.DelayStep
 import com.antiscrolling.ui.block.steps.DurationStep
 import com.antiscrolling.ui.block.steps.IntentStep
 import com.antiscrolling.ui.block.steps.TaskStep
 import com.antiscrolling.ui.hhmm
+import com.antiscrolling.ui.nearLimit
+import com.antiscrolling.ui.pressureColor
+import com.antiscrolling.ui.scanlines
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.time.Duration
 import java.time.Instant
+import java.time.ZonedDateTime
 
 class BlockActivity : ComponentActivity() {
     // Le QuotaWatcher relance cette activité toutes les 15 s : même package, la progression n'est pas remise à zéro.
@@ -57,21 +82,38 @@ class BlockActivity : ComponentActivity() {
     private var reason by mutableStateOf<Reason?>(null) // null : friction, sinon blocage sans accès possible
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
+        enableEdgeToEdge(dark, dark)
         super.onCreate(savedInstanceState)
         read(intent)
         onBackPressedDispatcher.addCallback(this) { giveUp(null) }
         setContent {
             AntiscrollingTheme {
                 val latestFocus by container.ruleRepository.latestFocus.collectAsState()
+                val recentOpens by container.eventRepository.recentOpens.collectAsState()
+                val rules by container.ruleRepository.rules.collectAsState()
                 key(blockedPackage) {
-                    val label = container.installedApps.label(blockedPackage)
+                    val pkg = blockedPackage
+                    val label = container.installedApps.label(pkg)
                     val blockedBy = reason
                     if (blockedBy != null) {
                         val focusEnd = latestFocus?.firstOrNull()?.endAt
-                        BlockedScreen(label, blockedMessage(blockedBy, focusEnd), onClose = ::goHome)
+                        BlockedScreen(pkg, label, blockedMessage(blockedBy, focusEnd), onClose = ::goHome)
                     } else {
-                        FrictionScreen(label, delaySec, steps, task, onGrant = ::grant, onGiveUp = ::giveUp)
+                        val usedMs by produceState(0L) {
+                            value = withContext(Dispatchers.IO) { container.usageRepository.today(ZonedDateTime.now()).foregroundMs[pkg] ?: 0L }
+                        }
+                        val now = ZonedDateTime.now()
+                        FrictionScreen(
+                            pkg,
+                            label,
+                            recentOpens.orEmpty().opensToday(pkg, now),
+                            nearLimit(rules?.at(now)?.get(pkg), usedMs),
+                            delaySec,
+                            steps,
+                            task,
+                            onGrant = ::grant,
+                            onGiveUp = ::giveUp,
+                        )
                     }
                 }
             }
@@ -121,6 +163,7 @@ class BlockActivity : ComponentActivity() {
         private const val EXTRA_STEPS = "steps"
         private const val EXTRA_TASK = "task"
         private const val EXTRA_REASON = "reason"
+        private val dark = SystemBarStyle.dark(Color.Transparent.toArgb()) // icônes claires : le fond est toujours sombre
 
         fun friction(context: Context, packageName: String, delaySec: Int, steps: List<Step>, task: TaskKind): Intent =
             base(context, packageName)
@@ -141,9 +184,32 @@ class BlockActivity : ComponentActivity() {
 // 1 min en debug, pour passer la recette sans attendre 5 min.
 private val DEFAULT_GRANT_MIN = if (BuildConfig.DEBUG) 1 else 5
 
+/** Icône et nom de l'appli, magenta quand sa limite est proche, avec un léger dédoublement de l'autre couleur. */
+@Composable
+private fun BlockedApp(packageName: String, label: String, alert: Boolean) {
+    val color = if (alert) Neon.Magenta else Neon.Cyan
+    val shift = if (alert) Neon.Cyan else Neon.Magenta
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        NeonIcon(packageName, color, 64.dp)
+        Text(
+            label.uppercase(),
+            color = if (alert) color else Neon.Title,
+            fontFamily = Neon.Display,
+            fontSize = 30.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.sp,
+            textAlign = TextAlign.Center,
+            style = TextStyle(shadow = Shadow(shift.copy(alpha = 0.75f), Offset(4f, 0f), 2f)),
+        )
+    }
+}
+
 @Composable
 private fun FrictionScreen(
+    packageName: String,
     label: String,
+    opensToday: Int,
+    alert: Boolean,
     delaySec: Int,
     steps: List<Step>,
     task: TaskKind,
@@ -159,22 +225,35 @@ private fun FrictionScreen(
         if (next.done) onGrant(next.grantMinutes(DEFAULT_GRANT_MIN), next.intent)
     }
     val continueLabel = if (progress.isLast) "Ouvrir $DEFAULT_GRANT_MIN min" else "Continuer"
+    val nth = opensToday + 1
     BackHandler { onGiveUp(intent) } // Retour = Renoncer, en gardant la raison déjà donnée
 
     Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+        Modifier.fillMaxSize().scanlines().verticalScroll(rememberScrollState()).padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(label, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
-        when (progress.current) {
-            Step.DELAY -> DelayStep(delaySec, continueLabel) { advance(progress.next()) }
-            Step.INTENT -> IntentStep(label) { advance(progress.withIntent(it)) }
-            Step.TASK -> TaskStep(task, continueLabel) { advance(progress.next()) }
-            Step.DURATION -> DurationStep { advance(progress.withDuration(it)) }
-            null -> Unit
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.weight(1f)) { Tag("Interception") }
+            Text(
+                "${if (nth == 1) "1re" else "${nth}e"} OUVERTURE AUJOURD'HUI",
+                color = Neon.Muted,
+                fontFamily = Neon.Mono,
+                fontSize = 11.sp,
+                letterSpacing = 1.sp,
+            )
         }
-        OutlinedButton(onClick = { onGiveUp(intent) }, modifier = Modifier.fillMaxWidth()) { Text("Renoncer") }
+        BlockedApp(packageName, label, alert)
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            when (progress.current) {
+                Step.DELAY -> DelayStep(delaySec, continueLabel, pressureColor(opensToday)) { advance(progress.next()) }
+                Step.INTENT -> IntentStep(label) { advance(progress.withIntent(it)) }
+                Step.TASK -> TaskStep(task, continueLabel) { advance(progress.next()) }
+                Step.DURATION -> DurationStep { advance(progress.withDuration(it)) }
+                null -> Unit
+            }
+        }
+        NeonButton("Renoncer", { onGiveUp(intent) }, Modifier.fillMaxWidth(), color = Neon.Magenta, filled = true)
     }
 }
 
@@ -185,14 +264,20 @@ private fun blockedMessage(reason: Reason, focusEnd: Instant?): String = when (r
 }
 
 @Composable
-private fun BlockedScreen(label: String, message: String, onClose: () -> Unit) {
+private fun BlockedScreen(packageName: String, label: String, message: String, onClose: () -> Unit) {
     Column(
-        Modifier.fillMaxSize().padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+        Modifier.fillMaxSize().scanlines().padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(label, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
-        Text(message, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
-        Button(onClick = onClose, modifier = Modifier.fillMaxWidth()) { Text("Fermer") }
+        Box(Modifier.fillMaxWidth()) { Tag("Blocage") }
+        Spacer(Modifier.weight(1f))
+        BlockedApp(packageName, label, alert = true)
+        NeonRing(Neon.Magenta, 1f, 120.dp) {
+            Icon(Icons.Filled.Lock, contentDescription = null, tint = Neon.Magenta, modifier = Modifier.size(40.dp))
+        }
+        Text(message, color = Neon.Text, fontSize = 17.sp, textAlign = TextAlign.Center)
+        Spacer(Modifier.weight(1f))
+        NeonButton("Fermer", onClose, Modifier.fillMaxWidth(), color = Neon.Magenta)
     }
 }
