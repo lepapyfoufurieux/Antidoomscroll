@@ -121,14 +121,9 @@ fun HomeScreen(container: AppContainer) {
                 val minutes = total / 60_000
                 Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     val value = if (minutes < 60) "$minutes" else "${minutes / 60}:${"%02d".format(minutes % 60)}"
-                    // Un seul halo de texte reste pâle autour d'un chiffre blanc : une copie bleue floutée derrière
-                    // donne le halo net de la maquette (text-shadow 0 0 14px).
-                    Box {
-                        Text(value, color = Neon.Cyan, fontFamily = Neon.Mono, fontSize = 52.sp, fontWeight = FontWeight.Bold,
-                            style = TextStyle(shadow = glow(Neon.Cyan, 40f)))
-                        Text(value, color = Color.White, fontFamily = Neon.Mono, fontSize = 52.sp, fontWeight = FontWeight.Bold,
-                            style = TextStyle(shadow = glow(Neon.Cyan, 16f)))
-                    }
+                    // Même halo que les titres.
+                    Text(value, color = Color.White, fontFamily = Neon.Mono, fontSize = 52.sp, fontWeight = FontWeight.Bold,
+                        style = TextStyle(shadow = glow(Neon.Cyan, 20f)))
                     Text(if (minutes < 60) "min aujourd'hui" else "h aujourd'hui", color = Neon.Muted, fontSize = 14.sp, modifier = Modifier.padding(bottom = 10.dp))
                 }
                 Text(
