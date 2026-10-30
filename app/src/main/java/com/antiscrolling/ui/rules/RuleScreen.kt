@@ -109,7 +109,7 @@ fun RuleScreen(
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
                     label.uppercase(),
-                    color = accent,
+                    color = if (accent == Neon.Cyan) Neon.Title else accent,
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp,

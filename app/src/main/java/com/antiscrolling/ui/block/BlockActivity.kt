@@ -193,7 +193,7 @@ private fun BlockedApp(packageName: String, label: String, alert: Boolean) {
         NeonIcon(packageName, color, 64.dp)
         Text(
             label.uppercase(),
-            color = color,
+            color = if (alert) color else Neon.Title,
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 1.sp,

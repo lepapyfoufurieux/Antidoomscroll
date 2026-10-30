@@ -72,6 +72,7 @@ import kotlinx.coroutines.withContext
 /** Bleu = normal, magenta = alerte (limite proche, focus), jaune = repères et réussites. */
 object Neon {
     val Cyan = Color(0xFF5CF0FF) // un peu plus clair que le cyan pur, pour le contraste sur fond sombre
+    val Title = Color(0xFFA6F8FF) // titres bleus, encore plus clairs
     val Magenta = Color(0xFFFF2BD6)
     val Pink = Color(0xFFFF8BE8) // petit texte sur une carte magenta, plus lisible
     val Yellow = Color(0xFFFCEE0A)
@@ -168,7 +169,7 @@ fun Caption(text: String, color: Color = Neon.Muted) {
 }
 
 @Composable
-fun ScreenHeader(tag: String, title: String, color: Color = Neon.Cyan) {
+fun ScreenHeader(tag: String, title: String, color: Color = Neon.Title) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Tag(tag)
         Text(
@@ -177,7 +178,7 @@ fun ScreenHeader(tag: String, title: String, color: Color = Neon.Cyan) {
             fontSize = 32.sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 1.sp,
-            style = TextStyle(shadow = glow(color)),
+            style = TextStyle(shadow = glow(if (color == Neon.Title) Neon.Cyan else color)),
         )
     }
 }
