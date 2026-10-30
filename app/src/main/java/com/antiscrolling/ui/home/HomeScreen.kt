@@ -190,7 +190,7 @@ private fun AppCard(label: String, pkg: String, ms: Long, total: Long, rule: Rul
                 fontFamily = Neon.Mono,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                style = TextStyle(shadow = if (rule != null) glow(color, 10f) else null),
+                style = TextStyle(shadow = if (rule != null) glow(color, 24f) else null),
             )
         }
         UsageBar(if (total == 0L) 0f else ms.toFloat() / total, color)

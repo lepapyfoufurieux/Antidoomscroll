@@ -25,10 +25,8 @@ import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
@@ -47,6 +45,7 @@ import com.antiscrolling.ui.Caption
 import com.antiscrolling.ui.Neon
 import com.antiscrolling.ui.ScreenHeader
 import com.antiscrolling.ui.glow
+import com.antiscrolling.ui.neonGlow
 import com.antiscrolling.ui.neonFrame
 import com.antiscrolling.ui.shortDuration
 import kotlinx.coroutines.Dispatchers
@@ -162,7 +161,7 @@ fun StatsScreen(container: AppContainer) {
                     fontFamily = Neon.Mono,
                     fontSize = 26.sp,
                     fontWeight = FontWeight.Bold,
-                    style = TextStyle(shadow = glow(weekColor, 12f)),
+                    style = TextStyle(shadow = glow(weekColor, 28f)),
                 )
                 StatsCalculator.change(week.thisWeek.values.sum(), week.lastWeek.values.sum())?.takeIf { week.lastWeekComplete }?.let { change ->
                     Text(
@@ -238,7 +237,7 @@ private fun Tile(title: String, value: String, detail: String, color: Color, fil
             fontFamily = Neon.Mono,
             fontSize = 32.sp,
             fontWeight = FontWeight.Bold,
-            style = TextStyle(shadow = if (glow) glow(color, 12f) else null),
+            style = TextStyle(shadow = if (glow) glow(color, 28f) else null),
         )
         Text(detail, color = Neon.Soft, fontSize = 12.sp)
     }
@@ -273,8 +272,7 @@ private fun Bars(days: List<Day>) {
                     Modifier
                         .weight(1f)
                         .fillMaxHeight((day.ms.toFloat() / max).coerceAtLeast(0.02f))
-                        .then(if (isToday) Modifier.shadow(8.dp, RectangleShape, clip = false, ambientColor = color, spotColor = color) else Modifier)
-                        .background(color),
+                        .then(if (isToday) Modifier.neonGlow(color, 12.dp, 0.8f, fill = color) else Modifier.background(color)),
                 )
             }
         }

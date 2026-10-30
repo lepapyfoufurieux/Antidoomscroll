@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,13 +32,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shadow
@@ -86,12 +88,32 @@ fun nearLimit(rule: Rule?, usedMs: Long): Boolean = rule != null && (rule.quotaS
 /** Bleu à la 1re ouverture du jour, magenta à partir de la 5e. */
 fun pressureColor(opensToday: Int): Color = lerp(Neon.Cyan, Neon.Magenta, (opensToday / 4f).coerceIn(0f, 1f))
 
-fun glow(color: Color, radius: Float = 18f) = Shadow(color.copy(alpha = 0.75f), Offset.Zero, radius)
+/** Halo d'un texte. [radius] en pixels : 32 px valent environ les 12 px CSS de la maquette. */
+fun glow(color: Color, radius: Float = 32f) = Shadow(color.copy(alpha = 0.8f), Offset.Zero, radius)
+
+/**
+ * Halo tout autour, comme un `box-shadow: 0 0 R` CSS. L'ombre de Compose tombe vers le bas comme une élévation :
+ * ici on dessine la forme avec un calque d'ombre centré, puis le contenu la recouvre.
+ */
+fun Modifier.neonGlow(color: Color, radius: Dp = 14.dp, alpha: Float = 0.45f, circle: Boolean = false, fill: Color = Neon.Bg): Modifier =
+    drawBehind {
+        val paint = Paint().asFrameworkPaint().apply {
+            isAntiAlias = true
+            this.color = fill.toArgb()
+            setShadowLayer(radius.toPx(), 0f, 0f, color.copy(alpha = alpha).toArgb())
+        }
+        drawIntoCanvas {
+            if (circle) {
+                it.nativeCanvas.drawCircle(center.x, center.y, size.minDimension / 2, paint)
+            } else {
+                it.nativeCanvas.drawRect(0f, 0f, size.width, size.height, paint)
+            }
+        }
+    }
 
 /** Cadre néon : fond, bordure (pleine ou en pointillés) et halo éventuel. */
 fun Modifier.neonFrame(color: Color, fill: Color = Neon.Panel, glow: Boolean = false, dashed: Boolean = false): Modifier =
-    // Fond opaque sous le halo : sinon l'ombre transparaît sous un fond translucide.
-    (if (glow) shadow(10.dp, RectangleShape, clip = false, ambientColor = color, spotColor = color).background(Neon.Bg) else this)
+    (if (glow) neonGlow(color) else this)
         .background(fill)
         .then(
             if (dashed) {
@@ -280,8 +302,7 @@ fun UsageBar(fraction: Float, color: Color) {
             Modifier
                 .fillMaxWidth(fraction.coerceIn(0f, 1f))
                 .height(6.dp)
-                .shadow(6.dp, RectangleShape, clip = false, ambientColor = color, spotColor = color)
-                .background(color),
+                .neonGlow(color, 10.dp, 0.8f, fill = color),
         )
     }
 }
@@ -292,8 +313,7 @@ fun NeonRing(color: Color, progress: Float, size: Dp, dashed: Boolean = false, c
     Column(
         Modifier
             .size(size)
-            .shadow(18.dp, CircleShape, clip = false, ambientColor = color, spotColor = color)
-            .background(Neon.Bg, CircleShape)
+            .neonGlow(color, 28.dp, 0.55f, circle = true)
             .drawBehind {
                 val stroke = 3.dp.toPx()
                 val arcSize = Size(this.size.width - stroke, this.size.height - stroke)
