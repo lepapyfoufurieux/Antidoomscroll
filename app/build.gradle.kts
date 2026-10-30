@@ -17,6 +17,13 @@ android {
         versionName = "0.1"
     }
 
+    buildTypes {
+        release {
+            // shortcut: signée avec la clé debug pour la recette sur téléphone, à remplacer par la clé d'envoi Play avant le test fermé
+            signingConfig = signingConfigs.getByName("debug")
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
