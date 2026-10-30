@@ -194,6 +194,7 @@ flowchart LR
 │
 ├── ui/
 │   ├── MainActivity.kt            <span class="c">// onboarding puis onglets Aujourd'hui / Applis / Profils / Focus / Stats</span>
+│   ├── Neon.kt                    <span class="c">// style néon : couleurs, cadres, boutons, grilles de choix, icônes d'applis</span>
 │   ├── onboarding/                <span class="c">// écran d'information + consentement, puis permissions</span>
 │   ├── home/                      <span class="c">// temps du jour ; options, ouvertures et raisons des applis freinées</span>
 │   ├── apps/                      <span class="c">// choix des applis suivies</span>
@@ -333,6 +334,7 @@ sequenceDiagram
           <tr><td>Widget</td><td><code>TimeLeftWidget</code></td></tr>
           <tr><td>Alerte avant la limite</td><td><code>QuotaWatcher</code> → <code>Notifier</code></td></tr>
           <tr><td>Notifications masquées</td><td><code>NotificationBlockerService</code> (mise en attente) + <code>rule.hideNotifications</code></td></tr>
+          <tr><td>Style néon</td><td><code>ui/Neon.kt</code> et <code>Theme.kt</code>, toujours sombre. Bleu : état normal. Magenta : alerte (limite dans les 5 dernières minutes ou atteinte, focus en cours, temps du jour au-dessus d'hier, ouvertures répétées). Jaune : repères et réussites (série, baisse sur la semaine, renoncements). Icônes d'applis : calque monochrome d'Android 13+, sinon icône grisée puis teintée</td></tr>
         </tbody>
       </table>
     </div>
@@ -402,7 +404,7 @@ sequenceDiagram
       <table>
         <thead><tr><th>Bibliothèque</th><th>Usage</th></tr></thead>
         <tbody>
-          <tr><td>Jetpack Compose + Material 3</td><td>Toute l'interface, y compris <code>BlockActivity</code></td></tr>
+          <tr><td>Jetpack Compose + Material 3</td><td>Toute l'interface, y compris <code>BlockActivity</code>. Material 3 sert de base (thème sombre, coins carrés) ; les éléments néon sont dans <code>ui/Neon.kt</code></td></tr>
           <tr><td>Navigation Compose</td><td>Pas utilisé : cinq onglets, et les écrans de réglages s'ouvrent par un état (rememberSaveable + BackHandler). À reconsidérer si les écrans imbriqués se multiplient</td></tr>
           <tr><td>Room</td><td>Règles, événements, historique</td></tr>
           <tr><td>Glance</td><td>Widget</td></tr>

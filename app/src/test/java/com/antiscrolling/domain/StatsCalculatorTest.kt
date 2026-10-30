@@ -33,6 +33,15 @@ class StatsCalculatorTest {
     }
 
     @Test
+    fun `jour au-dela de la limite, avec la meme marge que la serie`() {
+        val limits = mapOf(insta to 30)
+        assertFalse(StatsCalculator.overLimit(mapOf(insta to min(31)), limits))
+        assertTrue(StatsCalculator.overLimit(mapOf(insta to min(31) + 1), limits))
+        assertFalse(StatsCalculator.overLimit(mapOf(tiktok to min(500)), limits)) // sans limite
+        assertFalse(StatsCalculator.overLimit(emptyMap(), limits))
+    }
+
+    @Test
     fun `serie coupee par un jour absent, nulle sans limite, aujourd'hui ne compte pas`() {
         val usage = mapOf(today to emptyMap<String, Long>(), daysAgo(1) to emptyMap(), daysAgo(3) to emptyMap())
         assertEquals(1, StatsCalculator.streak(usage, mapOf(insta to 30), today))

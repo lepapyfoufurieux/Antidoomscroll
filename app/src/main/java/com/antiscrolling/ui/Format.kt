@@ -16,5 +16,11 @@ fun durationLabel(minutes: Int): String = when {
     else -> "${minutes / 60} h ${minutes % 60}"
 }
 
+/** Format court des cartes : « 42m », « 5h10 ». */
+fun shortDuration(ms: Long): String {
+    val minutes = ms / 60_000
+    return if (minutes < 60) "${minutes}m" else "${minutes / 60}h${"%02d".format(minutes % 60)}"
+}
+
 /** 0 ou 1 au singulier, comme en français. */
 fun count(n: Int, word: String) = if (n <= 1) "$n $word" else "$n ${word}s"

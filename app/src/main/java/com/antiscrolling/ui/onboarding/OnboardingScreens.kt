@@ -7,12 +7,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.antiscrolling.ui.Neon
+import com.antiscrolling.ui.NeonButton
+import com.antiscrolling.ui.ScreenHeader
 
 /** Écran d'information exigé par Google Play avant d'envoyer vers Paramètres › Accessibilité. */
 @Composable
@@ -64,10 +66,10 @@ fun UsageAccessScreen(onOpenSettings: () -> Unit) {
 private fun OnboardingPage(title: String, paragraphs: List<String>, button: String, onClick: () -> Unit) {
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
-        Text(title, style = MaterialTheme.typography.headlineMedium)
-        paragraphs.forEach { Text(it, style = MaterialTheme.typography.bodyLarge) }
-        Button(onClick = onClick, modifier = Modifier.fillMaxWidth()) { Text(button) }
+        ScreenHeader("Antidoomscroll", title)
+        paragraphs.forEach { Text(it, color = Neon.Soft, fontSize = 16.sp, lineHeight = 23.sp) }
+        NeonButton(button, onClick, Modifier.fillMaxWidth(), color = Neon.Yellow, filled = true)
     }
 }

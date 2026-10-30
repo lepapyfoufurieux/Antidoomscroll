@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Antiscrolling" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- Sombre comme l'interface néon, pour que le lancement ne flashe pas en blanc. -->
+    <style name="Theme.Antiscrolling" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#FF07070F</item>
+    </style>
 </resources>

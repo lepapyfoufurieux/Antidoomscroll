@@ -1,27 +1,44 @@
 package com.antiscrolling.ui.focus
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.antiscrolling.AppContainer
 import com.antiscrolling.BuildConfig
+import com.antiscrolling.domain.FocusSession
+import com.antiscrolling.ui.Caption
+import com.antiscrolling.ui.ChoiceGrid
+import com.antiscrolling.ui.Neon
+import com.antiscrolling.ui.NeonButton
+import com.antiscrolling.ui.NeonRing
+import com.antiscrolling.ui.ScreenHeader
 import com.antiscrolling.ui.durationLabel
+import com.antiscrolling.ui.glow
 import com.antiscrolling.ui.hhmm
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -30,35 +47,55 @@ import java.time.Instant
 import java.time.ZonedDateTime
 
 // En debug, un focus de 2 min pour la recette.
-private val FOCUS_CHOICES = (if (BuildConfig.DEBUG) listOf(2) else emptyList()) + listOf(25, 60, 120)
+private val FOCUS_CHOICES = (if (BuildConfig.DEBUG) listOf(2) else emptyList()) + listOf(5, 15, 30, 45, 60, 120)
 
+/** [active] : le focus en cours, suivi par l'écran principal qui passe tout au magenta pendant ce temps. */
 @Composable
-fun FocusScreen(container: AppContainer) {
-    val sessions by container.ruleRepository.latestFocus.collectAsState()
+fun FocusScreen(container: AppContainer, active: FocusSession?) {
     val rules by container.ruleRepository.rules.collectAsState()
     val scope = rememberCoroutineScope()
-    // Recalcule « en cours » quand le focus se termine pendant que l'écran est affiché.
-    val tick by produceState(0) {
-        while (true) {
-            delay(15_000)
-            value = value + 1
-        }
-    }
-    val active = remember(sessions, tick) { sessions?.firstOrNull()?.takeIf { it.isActive(ZonedDateTime.now()) } }
     val tracked = rules?.at(ZonedDateTime.now())?.values?.count { it.enabled } ?: 0 // le focus bloque les applis du profil actif
 
     Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 20.dp, top = 28.dp, end = 20.dp, bottom = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        Text("Mode focus", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(top = 8.dp))
+        ScreenHeader("Verrouillage total", "Mode focus")
         if (active != null) {
-            Text("En cours jusqu'à ${hhmm(active.endAt)}", style = MaterialTheme.typography.headlineSmall)
-            Text("Les applis suivies ($tracked) sont bloquées.", style = MaterialTheme.typography.bodyLarge)
-            OutlinedButton(
-                onClick = { scope.launch { container.ruleRepository.stopFocus(active, Instant.now()) } },
-                modifier = Modifier.fillMaxWidth(),
-            ) { Text("Arrêter le focus") }
+            // Compte à rebours à la seconde, seulement pendant le focus.
+            @SuppressLint("ProduceStateDoesNotAssignValue") // assignée dans la boucle, faux positif de lint
+            val now by produceState(Instant.now(), active) {
+                while (true) {
+                    value = Instant.now()
+                    delay(1000)
+                }
+            }
+            val left = Duration.between(now, active.endAt).coerceAtLeast(Duration.ZERO)
+            val total = Duration.between(active.startAt, active.endAt).toMillis().coerceAtLeast(1)
+            Box(Modifier.fillMaxWidth().padding(top = 12.dp), contentAlignment = Alignment.Center) {
+                NeonRing(Neon.Magenta, left.toMillis().toFloat() / total, 220.dp) {
+                    Icon(Icons.Filled.Lock, contentDescription = null, tint = Neon.Magenta, modifier = Modifier.size(36.dp))
+                    Text(
+                        countdown(left),
+                        color = Color.White,
+                        fontFamily = Neon.Mono,
+                        fontSize = 42.sp,
+                        fontWeight = FontWeight.Bold,
+                        style = TextStyle(shadow = glow(Neon.Magenta)),
+                    )
+                    Caption("restantes", Neon.Pink)
+                }
+            }
+            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("En cours jusqu'à ${hhmm(active.endAt)}", color = Neon.Text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                Text("Les applis suivies ($tracked) sont bloquées.", color = Neon.Soft, fontSize = 14.sp, textAlign = TextAlign.Center)
+            }
+            NeonButton(
+                "Arrêter le focus",
+                { scope.launch { container.ruleRepository.stopFocus(active, Instant.now()) } },
+                Modifier.fillMaxWidth(),
+                color = Neon.Magenta,
+            )
         } else {
             Text(
                 if (tracked == 0) {
@@ -66,18 +103,26 @@ fun FocusScreen(container: AppContainer) {
                 } else {
                     "Bloque les applis suivies ($tracked) pendant la durée choisie, sans pause ni accès possible."
                 },
-                style = MaterialTheme.typography.bodyLarge,
+                color = Neon.Soft,
+                fontSize = 14.sp,
+                lineHeight = 21.sp,
             )
-            FOCUS_CHOICES.forEach { minutes ->
-                Button(
-                    onClick = {
-                        val now = Instant.now()
-                        scope.launch { container.ruleRepository.startFocus(now, now.plus(Duration.ofMinutes(minutes.toLong()))) }
-                    },
-                    enabled = tracked > 0,
-                    modifier = Modifier.fillMaxWidth(),
-                ) { Text("Lancer ${durationLabel(minutes)}") }
+            Box(Modifier.fillMaxWidth().padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
+                NeonRing(Neon.Cyan, 1f, 180.dp, dashed = true) {
+                    Icon(Icons.Filled.Lock, contentDescription = null, tint = Neon.Cyan, modifier = Modifier.size(64.dp))
+                }
+            }
+            Caption("Lancer pour")
+            ChoiceGrid(FOCUS_CHOICES, null, 3, ::durationLabel, enabled = tracked > 0, role = Role.Button) { minutes ->
+                val now = Instant.now()
+                scope.launch { container.ruleRepository.startFocus(now, now.plus(Duration.ofMinutes(minutes.toLong()))) }
             }
         }
     }
+}
+
+/** « 42:17 », ou « 1:05:00 » au-delà d'une heure. */
+private fun countdown(left: Duration): String {
+    val s = left.seconds
+    return if (s >= 3600) "%d:%02d:%02d".format(s / 3600, s / 60 % 60, s % 60) else "%02d:%02d".format(s / 60, s % 60)
 }

@@ -109,14 +109,25 @@ Réglages : Applis › « Options pour l'application » sous l'appli cochée. Su
 | # | Scénario | Attendu |
 |---|---|---|
 | PR1 | Profils › « Nouveau profil », nommer « Soir » | Le profil s'ouvre sur ses horaires, « Aucune plage ». Dans la liste, il est désactivé. Dans Applis, il a les mêmes applis cochées et les mêmes options que « Par défaut ». |
-| PR2 **critique** | Ajouter à « Soir » un horaire qui contient l'heure actuelle, puis l'activer avec son interrupteur | Profils : « Actif en ce moment » sous « Soir ». Aujourd'hui : « Profil : Soir ». Applis s'ouvre sur « Soir ». |
+| PR2 **critique** | Ajouter à « Soir » un horaire qui contient l'heure actuelle, puis l'activer avec son interrupteur | Profils : « Soir » en magenta avec l'étiquette ACTIF. Aujourd'hui : « PROFIL ▸ SOIR ». Applis s'ouvre sur « Soir ». |
 | PR3 **critique** | Dans Applis › « Soir », décocher une appli encore cochée dans « Par défaut », puis l'ouvrir | Elle s'ouvre librement. « Par défaut » la garde cochée. |
 | PR4 | Supprimer l'horaire de « Soir », rouvrir l'appli | Les réglages de « Par défaut » s'appliquent (pause habituelle). |
 | PR5 | Rester dans une appli libre dans le profil actif quand un profil qui la freine commence | Frein ou blocage en moins de 20 s. |
 | PR8 | Désactiver « Soir » pendant son horaire | « Par défaut » s'applique au passage suivant. |
-| PR9 | Activer un profil sans horaire | « Actif en ce moment » ; il s'applique jusqu'à ce qu'on le désactive. |
+| PR9 | Activer un profil sans horaire | Étiquette ACTIF ; il s'applique jusqu'à ce qu'on le désactive. |
 | PR6 | Deux profils dont les horaires se chevauchent | Le plus haut dans la liste s'applique. |
 | PR7 | Supprimer un profil depuis son écran | Il disparaît de Profils et des choix d'Applis ; Applis revient au profil actif. |
+
+## Style néon
+
+| # | Scénario | Attendu |
+|---|---|---|
+| UX1 | Ouvrir l'appli, puis une appli freinée | Fond sombre dès le lancement, sans flash blanc. Icônes de la barre d'état claires. |
+| UX2 | Appli freinée avec une limite de 7 min (debug), l'utiliser 2 min puis revenir | Aujourd'hui et Applis : sa carte passe entièrement en magenta, « 2m / 7m ». Les autres restent bleues. |
+| UX3 | Pause croissante, ouvrir l'appli 1 fois puis 5 fois dans la journée | L'anneau de la pause est bleu à la 1re ouverture, magenta à la 5e. L'en-tête indique « 1re » puis « 5e ouverture aujourd'hui ». |
+| UX4 | Lancer un focus | Grille de fond, trait et onglet Focus en magenta ; le titre reste bleu. Retour au bleu à l'arrêt. |
+| UX5 | Icônes d'applis sur Android 13+ puis sur l'émulateur API 28 | 13+ : silhouette monochrome teintée (Chrome, Agenda…). API 28 : icône grisée puis teintée. Jamais de case vide une fois chargée. |
+| UX6 | Stats, avec plus de temps aujourd'hui qu'hier | Cadre « 7 derniers jours » et total en magenta. Moins qu'hier : bleu. |
 
 ## Robustesse
 
