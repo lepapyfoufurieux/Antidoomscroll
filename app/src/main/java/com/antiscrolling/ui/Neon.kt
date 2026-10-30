@@ -93,13 +93,13 @@ fun nearLimit(rule: Rule?, usedMs: Long): Boolean = rule != null && (rule.quotaS
 fun pressureColor(opensToday: Int): Color = lerp(Neon.Cyan, Neon.Magenta, (opensToday / 4f).coerceIn(0f, 1f))
 
 /** Halo d'un texte. [radius] en pixels : 32 px valent environ les 12 px CSS de la maquette. */
-fun glow(color: Color, radius: Float = 12f) = Shadow(color.copy(alpha = 0.7f), Offset.Zero, radius)
+fun glow(color: Color, radius: Float = 6f) = Shadow(color.copy(alpha = 0.7f), Offset.Zero, radius)
 
 /**
  * Halo tout autour, comme un `box-shadow: 0 0 R` CSS. L'ombre de Compose tombe vers le bas comme une élévation :
  * ici on dessine la forme avec un calque d'ombre centré, puis le contenu la recouvre.
  */
-fun Modifier.neonGlow(color: Color, radius: Dp = 8.dp, alpha: Float = 0.45f, circle: Boolean = false, fill: Color = Neon.Bg): Modifier =
+fun Modifier.neonGlow(color: Color, radius: Dp = 4.dp, alpha: Float = 0.5f, circle: Boolean = false, fill: Color = Neon.Bg): Modifier =
     drawBehind {
         val paint = Paint().asFrameworkPaint().apply {
             isAntiAlias = true
@@ -306,7 +306,7 @@ fun UsageBar(fraction: Float, color: Color) {
             Modifier
                 .fillMaxWidth(fraction.coerceIn(0f, 1f))
                 .height(6.dp)
-                .neonGlow(color, 6.dp, 0.7f, fill = color),
+                .neonGlow(color, 3.dp, 0.7f, fill = color),
         )
     }
 }
@@ -318,8 +318,8 @@ fun NeonRing(
     progress: Float,
     size: Dp,
     dashed: Boolean = false,
-    glowRadius: Dp = 12.dp,
-    glowAlpha: Float = 0.55f,
+    glowRadius: Dp = 5.dp,
+    glowAlpha: Float = 0.6f,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(

@@ -161,7 +161,7 @@ fun StatsScreen(container: AppContainer) {
                     fontFamily = Neon.Mono,
                     fontSize = 26.sp,
                     fontWeight = FontWeight.Bold,
-                    style = TextStyle(shadow = glow(weekColor, 10f)),
+                    style = TextStyle(shadow = glow(weekColor, 5f)),
                 )
                 StatsCalculator.change(week.thisWeek.values.sum(), week.lastWeek.values.sum())?.takeIf { week.lastWeekComplete }?.let { change ->
                     Text(
@@ -237,7 +237,7 @@ private fun Tile(title: String, value: String, detail: String, color: Color, fil
             fontFamily = Neon.Mono,
             fontSize = 32.sp,
             fontWeight = FontWeight.Bold,
-            style = TextStyle(shadow = if (glow) glow(color, 10f) else null),
+            style = TextStyle(shadow = if (glow) glow(color, 5f) else null),
         )
         Text(detail, color = Neon.Soft, fontSize = 12.sp)
     }
@@ -272,7 +272,7 @@ private fun Bars(days: List<Day>) {
                     Modifier
                         .weight(1f)
                         .fillMaxHeight((day.ms.toFloat() / max).coerceAtLeast(0.02f))
-                        .then(if (isToday) Modifier.neonGlow(color, 6.dp, 0.7f, fill = color) else Modifier.background(color)),
+                        .then(if (isToday) Modifier.neonGlow(color, 3.dp, 0.7f, fill = color) else Modifier.background(color)),
                 )
             }
         }
