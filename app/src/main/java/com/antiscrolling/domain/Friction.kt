@@ -24,13 +24,6 @@ sealed interface Task {
 
     companion object {
         const val COPY_SENTENCE = "J'ouvre cette appli parce que je l'ai décidé."
-
-        /** [random] de 0 à 1, injecté pour les tests. */
-        fun create(kind: TaskKind, random: () -> Double): Task? = when (kind) {
-            TaskKind.NONE -> null
-            TaskKind.COPY -> Copy(COPY_SENTENCE)
-            TaskKind.MATH -> Math(10 + (random() * 90).toInt(), 10 + (random() * 90).toInt())
-        }
     }
 }
 

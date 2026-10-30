@@ -61,15 +61,13 @@ class FrictionTest {
 
     @Test
     fun `taches, recopie tolerante aux espaces et a la casse, calcul exact`() {
-        val copy = Task.create(TaskKind.COPY) { 0.0 }!!
+        val copy = Task.Copy(Task.COPY_SENTENCE)
         assertTrue(copy.check("  j'ouvre cette  appli parce que je l'ai DÉCIDÉ. "))
         assertFalse(copy.check("j'ouvre cette appli"))
-        val math = Task.create(TaskKind.MATH) { 0.5 } as Task.Math
-        assertEquals(Task.Math(55, 55), math)
+        val math = Task.Math(55, 55)
         assertTrue(math.check(" 110 "))
         assertFalse(math.check("111"))
         assertFalse(math.check("cent dix"))
-        assertNull(Task.create(TaskKind.NONE) { 0.0 })
     }
 
     @Test

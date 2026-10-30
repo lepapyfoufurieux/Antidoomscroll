@@ -9,6 +9,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.RoomDatabase
+import androidx.room.Transaction
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 
@@ -90,6 +91,24 @@ interface AppDao {
 
     @Query("DELETE FROM profile_schedule WHERE profileId = :profileId")
     suspend fun deleteProfileSchedulesOf(profileId: Long)
+
+    /** Tout ou rien : un processus tué en route ne laisse pas un profil sans ses règles. [rules] et [schedules] reçoivent l'id du profil. */
+    @Transaction
+    suspend fun insertProfileWithRules(profile: ProfileEntity, rules: List<RuleEntity>, schedules: List<ScheduleEntity>): Long {
+        val id = insertProfile(profile)
+        upsertRules(rules.map { it.copy(profileId = id) })
+        insertSchedules(schedules.map { it.copy(profileId = id) })
+        return id
+    }
+
+    /** Tout ou rien, comme la création : pas de règles orphelines. */
+    @Transaction
+    suspend fun deleteProfileWithRules(id: Long) {
+        deleteProfileSchedulesOf(id)
+        deleteProfile(id)
+        deleteRulesOf(id)
+        deleteSchedulesOf(id)
+    }
 
     /** La dernière session lancée seulement (liste vide : jamais lancé). */
     @Query("SELECT * FROM focus_session ORDER BY startAt DESC LIMIT 1")
@@ -180,7 +199,7 @@ interface HistoryDao {
     suspend fun insertDay(usage: List<DailyUsageEntity>, unlocks: DailyUnlocksEntity)
 }
 
-// Avant la première publication, la base est effacée à chaque changement de schéma.
+// Schéma exporté dans app/schemas : chaque changement de version a sa migration, testée (tests.md, niveau 3).
 @Database(
     entities = [
         RuleEntity::class, GrantEntity::class, DailyUsageEntity::class, DailyUnlocksEntity::class,
@@ -188,7 +207,7 @@ interface HistoryDao {
         ProfileEntity::class, ProfileScheduleEntity::class,
     ],
     version = 7,
-    exportSchema = false,
+    exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun dao(): AppDao

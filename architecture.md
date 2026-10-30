@@ -207,7 +207,7 @@ Les réglages simples (onboarding terminé, appli affichée dans le widget, cons
 
 Le temps du jour se calcule dans `UsageCalculator`, une fonction pure qui reçoit les événements `ACTIVITY_RESUMED` / `ACTIVITY_PAUSED` de `queryEvents()`, plus précis que les totaux agrégés. Elle gère les applis à plusieurs activités, un `PAUSED` manquant, une session commencée avant minuit et une appli encore ouverte. Les déverrouillages viennent des événements `KEYGUARD_HIDDEN`, d'où le minSdk 28.
 
-**Migrations.** Avant la première publication, effacer la base à chaque changement de schéma suffit. Après, chaque changement de schéma a sa migration Room, avec `exportSchema` activé, pour ne pas perdre l'historique des utilisateurs.
+**Migrations.** Dès le premier envoi en test fermé, la base n'est plus jamais effacée : `exportSchema` est activé (schémas dans `app/schemas`, versionnés), et chaque changement de schéma a sa migration Room, pour ne pas perdre l'historique des testeurs puis des utilisateurs. Sans migration, l'appli plante au démarrage plutôt que d'effacer les données.
 
 ## Chaque fonctionnalité dans le code
 

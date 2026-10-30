@@ -85,7 +85,8 @@ class BlockActivity : ComponentActivity() {
         enableEdgeToEdge(dark, dark)
         super.onCreate(savedInstanceState)
         read(intent)
-        onBackPressedDispatcher.addCallback(this) { giveUp(null) }
+        // Blocage dur : Retour = Fermer, pas un renoncement. La friction a son propre BackHandler, prioritaire.
+        onBackPressedDispatcher.addCallback(this) { goHome() }
         setContent {
             AntiscrollingTheme {
                 val latestFocus by container.ruleRepository.latestFocus.collectAsState()

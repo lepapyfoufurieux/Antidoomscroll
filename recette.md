@@ -28,6 +28,7 @@ Préparation : Instagram (ou une autre appli) suivi avec un délai de 15 s, tout
 | B7 | Écran éteint pendant l'accès, rallumé après expiration | Bloquée au déverrouillage. |
 | B8 | Rotation pendant l'attente | Le compte à rebours continue, pas de remise à zéro. |
 | B9 | Désactiver l'appli dans la liste pendant qu'elle est ouverte | Plus de blocage au passage suivant. |
+| B10 | Onglet Applis, installer une appli depuis le Play Store, revenir dans l'onglet Applis, puis la désinstaller et revenir | Elle apparaît dans la liste sans redémarrer Antiscrolling, puis disparaît. |
 
 ## Temps du jour et historique
 
@@ -47,7 +48,7 @@ En version debug, la liste des limites propose aussi 2 et 7 min (alerte à 2 min
 | # | Scénario | Attendu |
 |---|---|---|
 | Q1 | Applis › « Options pour l'application » › « Limite : aucune », choisir une durée | La limite s'affiche dans les options. À la première limite (Android 13+), Android demande l'autorisation d'envoyer des notifications. |
-| Q2 **critique** | Atteindre la limite en restant dans l'appli | Écran « Le temps prévu pour aujourd'hui est écoulé » en moins de 20 s, sans bouton d'accès. « Fermer » ou Retour ramène à l'accueil. |
+| Q2 **critique** | Atteindre la limite en restant dans l'appli | Écran « Le temps prévu pour aujourd'hui est écoulé » en moins de 20 s, sans bouton d'accès. « Fermer » ou Retour ramène à l'accueil, sans compter de renoncement dans « Aujourd'hui ». |
 | Q3 **critique** | Accès « 5 min » en cours quand la limite tombe | Bloquée quand même. |
 | Q4 | Rouvrir l'appli une fois la limite atteinte | Bloquée tout de suite, sans pause ni accès possible. |
 | Q5 | Entrer dans les 5 dernières minutes | Notification « <appli> : plus que 5 min », une seule fois dans la journée. |

@@ -17,9 +17,7 @@ class AppContainer(context: Context) {
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
 
-    private val db = Room.databaseBuilder(context, AppDatabase::class.java, "antiscrolling.db")
-        .fallbackToDestructiveMigration()
-        .build()
+    private val db = Room.databaseBuilder(context, AppDatabase::class.java, "antiscrolling.db").build()
 
     val ruleRepository = RuleRepository(db.dao(), scope)
     val eventRepository = EventRepository(db.dao(), scope)

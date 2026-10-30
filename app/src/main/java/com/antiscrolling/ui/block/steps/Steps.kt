@@ -37,6 +37,7 @@ import com.antiscrolling.ui.NeonRing
 import com.antiscrolling.ui.durationLabel
 import com.antiscrolling.ui.glow
 import kotlinx.coroutines.delay
+import kotlin.random.Random
 
 // En debug, 1 min pour passer la recette vite.
 private val DURATION_CHOICES = (if (BuildConfig.DEBUG) listOf(1) else emptyList()) + listOf(5, 10, 15, 30)
@@ -80,7 +81,7 @@ fun IntentStep(label: String, onPick: (String) -> Unit) {
 @Composable
 fun TaskStep(kind: TaskKind, continueLabel: String, onDone: () -> Unit) {
     // Les nombres du calcul survivent à la rotation : sinon on pourrait tourner l'écran pour en avoir de plus simples.
-    val numbers = rememberSaveable { (Task.create(TaskKind.MATH, Math::random) as Task.Math).let { intArrayOf(it.a, it.b) } }
+    val numbers = rememberSaveable { intArrayOf(Random.nextInt(10, 100), Random.nextInt(10, 100)) }
     val task = when (kind) {
         TaskKind.COPY -> Task.Copy(Task.COPY_SENTENCE)
         TaskKind.MATH -> Task.Math(numbers[0], numbers[1])

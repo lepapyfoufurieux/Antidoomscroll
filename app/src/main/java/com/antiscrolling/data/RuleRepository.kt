@@ -66,22 +66,15 @@ class RuleRepository(private val dao: AppDao, scope: CoroutineScope) {
 
     /** Nouveau profil, désactivé, avec une copie des réglages du profil par défaut : il ne s'applique pas pendant la copie. */
     suspend fun addProfile(name: String): Long {
-        val id = dao.insertProfile(ProfileEntity(0, name, enabled = false))
         val defaults = rules.value?.of(DEFAULT_PROFILE_ID).orEmpty().values
-        dao.upsertRules(defaults.map { entity(id, it) })
-        dao.insertSchedules(
-            defaults.flatMap { rule -> rule.schedules.map { ScheduleEntity(0, id, rule.packageName, it.daysMask, it.startMin, it.endMin) } },
+        return dao.insertProfileWithRules(
+            ProfileEntity(0, name, enabled = false),
+            defaults.map { entity(0, it) },
+            defaults.flatMap { rule -> rule.schedules.map { ScheduleEntity(0, 0, rule.packageName, it.daysMask, it.startMin, it.endMin) } },
         )
-        return id
     }
 
-    /** Horaires d'abord : le profil cesse d'être actif avant que ses règles disparaissent. */
-    suspend fun deleteProfile(id: Long) {
-        dao.deleteProfileSchedulesOf(id)
-        dao.deleteProfile(id)
-        dao.deleteRulesOf(id)
-        dao.deleteSchedulesOf(id)
-    }
+    suspend fun deleteProfile(id: Long) = dao.deleteProfileWithRules(id)
 
     suspend fun setProfileEnabled(id: Long, enabled: Boolean) = dao.setProfileEnabled(id, enabled)
 

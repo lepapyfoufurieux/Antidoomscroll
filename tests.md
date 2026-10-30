@@ -12,7 +12,7 @@ Le code se partage en deux : ce qui **décide** (Kotlin pur, `domain/`) et ce qu
 |---|---|---|---|
 | 1. Pur | `domain/` : `RuleEngine`, `UsageCalculator`, `StatsCalculator`, enchaînement des frictions | JUnit 4 sur la JVM | `./gradlew test`, à chaque modification |
 | 2. Colle avec faux | `QuotaWatcher`, repositories (mémoire avant base, `null` au démarrage à froid) | JUnit 4 + `kotlinx-coroutines-test`, faux `AppDao` écrit à la main | idem |
-| 3. Instrumenté | Migrations Room, seulement après la première publication | `androidTest` + `MigrationTestHelper`, émulateur | avant chaque version qui change le schéma |
+| 3. Instrumenté | Migrations Room, dès la première migration | `androidTest` + `MigrationTestHelper`, émulateur | avant chaque version qui change le schéma |
 | 4. Recette | Services, écrans, permissions, comportement des fabricants | [recette.md](recette.md), sur téléphone | avant chaque envoi en test fermé ou en production |
 
 Volontairement absents : Mockito et MockK (une interface se remplace par un faux de dix lignes), Robolectric (lent, et ne simule pas un service d'accessibilité de façon fiable), tests Compose, objectif de couverture en pourcentage. Ils viendront si un signe de la section « Quand monter d'un cran » apparaît.
@@ -39,7 +39,7 @@ Une fonctionnalité est terminée quand `./gradlew test lint` passe et que les l
 | Un état gardé en mémoire puis écrit en base | Niveau 2 : l'état est visible tout de suite, avant l'écriture ; `null` tant que la base n'est pas lue. |
 | Une boucle ou une échéance (`QuotaWatcher`, alerte « 5 min ») | Niveau 2 en temps virtuel (`runTest`, `advanceTimeBy`) : la décision change au bon passage, rien ne part écran éteint. |
 | Un service, un écran, une permission | Ses scénarios dans [recette.md](recette.md). |
-| Un changement de schéma après la première publication | La migration et son test (niveau 3). |
+| Un changement de schéma | La migration et son test (niveau 3). |
 
 **Chaque bug trouvé** donne un test qui le reproduit, au niveau le plus bas possible, écrit avant la correction. S'il n'est pas automatisable, un scénario de recette.
 
@@ -88,7 +88,6 @@ Un outil n'arrive que quand son besoin est là.
 | Le projet est sur GitHub | Une CI (GitHub Actions) qui lance `./gradlew test lint` à chaque push. |
 | La recette complète dépasse 30 min, ou un même scénario casse deux fois | Automatiser ce scénario en test instrumenté UI Automator. Le service s'active avec `adb shell settings put secure enabled_accessibility_services`. Se connecter avec `UiAutomation.FLAG_DONT_SUSPEND_ACCESSIBILITY_SERVICES`, sinon Android met le service en pause pendant le test. Les lancer en parallèle sur les versions du tableau de la recette, avec un groupe d'appareils gérés par Gradle (Gradle Managed Devices). |
 | Un écran Compose a une logique qu'on ne peut pas sortir | Un test Compose (`createComposeRule`) pour cet écran-là. |
-| Première publication | `exportSchema = true`, migrations Room et leurs tests. |
 
 ## Commandes
 

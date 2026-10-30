@@ -307,7 +307,7 @@ sequenceDiagram
       </table>
     </div>
     <p class="prose">Le temps du jour se calcule dans <code>UsageCalculator</code>, une fonction pure qui reçoit les événements <code>ACTIVITY_RESUMED</code> / <code>ACTIVITY_PAUSED</code> de <code>queryEvents()</code>, plus précis que les totaux agrégés. Elle gère les applis à plusieurs activités, un <code>PAUSED</code> manquant, une session commencée avant minuit et une appli encore ouverte. Les déverrouillages viennent des événements <code>KEYGUARD_HIDDEN</code>, d'où le minSdk 28.</p>
-    <p class="prose"><b>Migrations.</b> Avant la première publication, effacer la base à chaque changement de schéma suffit. Après, chaque changement de schéma a sa migration Room, avec <code>exportSchema</code> activé, pour ne pas perdre l'historique des utilisateurs.</p>
+    <p class="prose"><b>Migrations.</b> Dès le premier envoi en test fermé, la base n'est plus jamais effacée : <code>exportSchema</code> est activé (schémas dans <code>app/schemas</code>, versionnés), et chaque changement de schéma a sa migration Room, pour ne pas perdre l'historique des testeurs puis des utilisateurs. Sans migration, l'appli plante au démarrage plutôt que d'effacer les données.</p>
   </section>
 
   <section id="features">
